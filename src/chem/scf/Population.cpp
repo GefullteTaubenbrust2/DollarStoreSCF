@@ -5,6 +5,7 @@
 #include "../../util/FormattedStream.hpp"
 
 #include <sstream>
+#include <functional>
 
 using namespace flo;
 
@@ -15,9 +16,9 @@ namespace scf {
 	DiagonalMatrixNd lowdin_populations[2];
 
 	void computeOrbitalPopulations(std::vector<double>& populations, std::vector<std::string>& labels, DiagonalMatrixNd& population_matrix, bool do_labels) {
-		uint atom_index = 9999999999;
+		uint atom_index = 0;
 		std::vector<double> buffer;
-		uint l = 999999999;
+		uint l = 99999999;
 		int m = 0;
 		for (int i = 0; i <= matrix_size; ++i) {
 			bool update = i == matrix_size;
@@ -142,7 +143,7 @@ namespace scf {
 			fout.resetRows();
 			fout.addRow(NumberFormat(), TextAlignment::centered, 16);
 			fout.addRow(NumberFormat(), TextAlignment::centered, 16);
-			fout << '|' << '_' << "Orbital" << '|' << '_' << "Population" << '|';
+			fout << '|' << '_' << "Atom" << '|' << '_' << "Population" << '|';
 			fout.resetRows();
 			fout.addRow(NumberFormat(), TextAlignment::left, 16);
 			fout.addRow(NumberFormat::scientificFormat(16, 8), TextAlignment::right, 16);
@@ -157,6 +158,34 @@ namespace scf {
 			fout.resetRows();
 			fout << '\n';
 		}
+	}
+
+	void printBondOrders(std::function<double(uint, uint)> calculateBondOrder, const std::string& title) {
+		fout.resetRows();
+		fout.addRow(NumberFormat(), TextAlignment::centered, 37);
+		fout << '|' << '-' << '_' << title << '|';
+		fout.resetRows();
+		fout.addRow(NumberFormat(), TextAlignment::centered, 16);
+		fout.addRow(NumberFormat(), TextAlignment::centered, 16);
+		fout << '|' << '_' << "Bond" << '|' << '_' << "Order" << '|';
+		fout.resetRows();
+		fout.addRow(NumberFormat(), TextAlignment::left, 16);
+		fout.addRow(NumberFormat::scientificFormat(16, 8), TextAlignment::right, 16);
+
+		for (int i = 0; i < molecule.atoms.size(); ++i) {
+			for (int j = 0; j < i; ++j) {
+				double distance = length(molecule[i].position - molecule[j].position);
+				if (distance < 10.0) {
+					std::ostringstream oss;
+					oss << element_symbols[(int)molecule[j].element - 1] << (j + 1) << '-' << element_symbols[(int)molecule[i].element - 1] << (i + 1);
+					fout << '|' << oss.str() << '|' << calculateBondOrder(j, i) << '|' << '\n';
+				}
+			}
+		}
+
+		fout << '-' << ',' << '-' << '\n';
+		fout.resetRows();
+		fout << '\n';
 	}
 
 	void calculateMullikenPopulations() {
@@ -178,6 +207,24 @@ namespace scf {
 
 		printPopulations(mulliken_populations[0], mulliken_populations[1]);
 	}
+
+	double calculateMullikenBondOrders(uint atom_a, uint atom_b) {
+		double bond_order = 0.0;
+
+		for (int mu = atom_basis[atom_a]; mu < atom_basis[atom_a + 1]; ++mu) {
+			for (int nu = atom_basis[atom_b]; nu < atom_basis[atom_b + 1]; ++nu) {
+				if (spin_treatment == SpinTreatment::unrestricted) bond_order += (density_matrix[0].at(mu, nu) + density_matrix[1].at(mu, nu)) * overlap_matrix.at(mu, nu);
+				else bond_order += 2.0 * density_matrix[0].at(mu, nu) * overlap_matrix.at(mu, nu);
+			}
+		}
+
+		return 2.0 * bond_order;
+	}
+
+	void printMullikenBondOrders() {
+		printBondOrders(calculateMullikenBondOrders, "Mulliken bond orders");
+	}
+
 	void calculateLowdinPopulations() {
 		lowdin_populations[0].resize(matrix_size);
 		if (spin_treatment == SpinTreatment::unrestricted) lowdin_populations[1].resize(matrix_size);
@@ -197,5 +244,123 @@ namespace scf {
 		calculateLowdinPopulations();
 
 		printPopulations(lowdin_populations[0], lowdin_populations[1]);
+	}
+
+	double calculateWibergBondOrders(uint atom_a, uint atom_b) {
+		double bond_order = 0.0;
+
+		SymmetricMatrixNd& orthogonal_density_matrix = buffer[0];
+
+		for (int mu = atom_basis[atom_a]; mu < atom_basis[atom_a + 1]; ++mu) {
+			for (int nu = atom_basis[atom_b]; nu < atom_basis[atom_b + 1]; ++nu) {
+				bond_order += orthogonal_density_matrix.at(mu, nu) * orthogonal_density_matrix.at(mu, nu);
+			}
+		}
+
+		return bond_order;
+	}
+
+	void printWibergBondOrders() {
+		if (spin_treatment == SpinTreatment::unrestricted) buffer[0] = (asymmetric_buffer[0] = lowdin_matrix * (asymmetric_buffer[1] = density_matrix[0] + density_matrix[1])) * lowdin_matrix;
+		else buffer[0] = (asymmetric_buffer[0] = lowdin_matrix * density_matrix[0]) * (buffer[1] = 2.0 * lowdin_matrix);
+		printBondOrders(calculateWibergBondOrders, "Wiberg bond orders");
+	}
+
+	void printMayerValence() {
+		calculateMullikenPopulations();
+
+		fout.resetRows();
+		fout.addRow(NumberFormat(), TextAlignment::centered, 71);
+		fout << '|' << '-' << '_' << "Mayer valence indices" << '|';
+		fout.resetRows();
+		fout.addRow(NumberFormat(), TextAlignment::centered, 8);
+		fout.addRow(NumberFormat(), TextAlignment::centered, 16);
+		fout.addRow(NumberFormat(), TextAlignment::centered, 16);
+		fout.addRow(NumberFormat(), TextAlignment::centered, 16);
+		fout << '|' << '_' << "Atom" << '|' << '_' << "Total valence" << '|' << '_' << "Bonded valence" << '|' << '_' << "Free valence" << '|';
+		fout.resetRows();
+		fout.addRow(NumberFormat(), TextAlignment::left, 8);
+		fout.addRow(NumberFormat::crudeFormat(16, 8), TextAlignment::right, 16);
+		fout.addRow(NumberFormat::crudeFormat(16, 8), TextAlignment::right, 16);
+		fout.addRow(NumberFormat::crudeFormat(16, 8), TextAlignment::right, 16);
+
+		if (spin_treatment == SpinTreatment::unrestricted) {
+			asymmetric_buffer[0] = (buffer[0] = density_matrix[0] + density_matrix[1]) * overlap_matrix;
+			asymmetric_buffer[1] = (buffer[0] = density_matrix[0] - density_matrix[1]) * overlap_matrix;
+		}
+		else {
+			asymmetric_buffer[0] = (buffer[0] = 2.0 * density_matrix[0]) * overlap_matrix;
+			asymmetric_buffer[1] = 0.0;
+		}
+
+		MatrixNd& lowdin_total_population = asymmetric_buffer[0];
+		MatrixNd& lowdin_spin_population = asymmetric_buffer[1];
+
+		SymmetricMatrixNd bond_order_matrix(molecule.size());
+
+		for (int atom_a = 0; atom_a < molecule.size(); ++atom_a) {
+			for (int atom_b = 0; atom_b < atom_a; ++atom_b) {
+				bond_order_matrix = calculateWibergBondOrders(atom_b, atom_a);
+			}
+		}
+
+		for (int atom_a = 0; atom_a < molecule.size(); ++atom_a) {
+			double gross_population = 0.0;
+			double self_bonding = 0.0;
+			double total_bond_order = 0.0;
+
+			for (int mu = atom_basis[atom_a]; mu < atom_basis[atom_a + 1]; ++mu) {
+				gross_population += mulliken_populations[0].at(mu, mu);
+				if (spin_treatment == SpinTreatment::unrestricted) gross_population += mulliken_populations[1].at(mu, mu);
+
+				for (int nu = atom_basis[atom_a]; nu < atom_basis[atom_a + 1]; ++nu) {
+					self_bonding += lowdin_total_population(mu, nu) * lowdin_total_population(nu, mu);
+				}
+			}
+
+			for (int atom_b = 0; atom_b < molecule.size(); ++atom_b) {
+				if (atom_a != atom_b) total_bond_order += bond_order_matrix(atom_a, atom_b);
+			}
+
+			double total_valence = 2.0 * gross_population - self_bonding;
+			double bonded_valence = total_valence - total_bond_order;
+			
+			std::ostringstream oss;
+			oss << element_symbols[(int)molecule[atom_a].element - 1] << (atom_a + 1);
+
+			fout << '|' << oss.str() << '|' << total_valence << '|' << bonded_valence << '|' << total_bond_order << '|' << '\n';
+		}
+
+		fout << '-' << ',' << '-' << ',' << '-' << ',' << '-';
+		fout.resetRows();
+		fout << '\n';
+	}
+
+	double calculateMayerBondOrders(uint atom_a, uint atom_b) {
+		double bond_order = 0.0;
+
+		MatrixNd& lowdin_total_population = asymmetric_buffer[0];
+		MatrixNd& lowdin_spin_population = asymmetric_buffer[1];
+
+		for (int mu = atom_basis[atom_a]; mu < atom_basis[atom_a + 1]; ++mu) {
+			for (int nu = atom_basis[atom_b]; nu < atom_basis[atom_b + 1]; ++nu) {
+				bond_order += lowdin_total_population.at(mu, nu) * lowdin_total_population(nu, mu) + lowdin_spin_population.at(mu, nu) * lowdin_spin_population(nu, mu);
+			}
+		}
+
+		return bond_order;
+	}
+
+	void printMayerBondOrders() {
+		if (spin_treatment == SpinTreatment::unrestricted) {
+			asymmetric_buffer[0] = (buffer[0] = density_matrix[0] + density_matrix[1]) * overlap_matrix;
+			asymmetric_buffer[1] = (buffer[0] = density_matrix[0] - density_matrix[1]) * overlap_matrix;
+		}
+		else {
+			asymmetric_buffer[0] = (buffer[0] = 2.0 * density_matrix[0]) * overlap_matrix;
+			asymmetric_buffer[1] = 0.0;
+		}
+
+		printBondOrders(calculateMayerBondOrders, "Mayer bond orders");
 	}
 }

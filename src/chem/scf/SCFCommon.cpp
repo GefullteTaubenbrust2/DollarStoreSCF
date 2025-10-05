@@ -1,8 +1,11 @@
 #include "SCFCommon.hpp"
 
 namespace scf {
+	bool open_shell = false;
+
 	std::vector<flo::ContractedGaussian> basis;
 	std::vector<uint> basis_atoms;
+	std::vector<uint> atom_basis;
 
 	flo::SymmetricMatrixNd kinetic_energy_matrix;
 	flo::SymmetricMatrixNd nuclear_attraction_matrix;
@@ -17,6 +20,7 @@ namespace scf {
 	flo::MatrixNd coefficient_matrix[2];
 	flo::SymmetricMatrixNd fock_matrix[2];
 	flo::SymmetricMatrixNd density_matrix[2];
+	flo::SymmetricMatrixNd total_density_matrix;
 
 	uint electron_count[2];
 
@@ -24,5 +28,5 @@ namespace scf {
 
 	double nuclear_energy;
 
-	SpinTreatment spin_treatment = SpinTreatment::restricted;
+	SpinTreatment spin_treatment;
 }

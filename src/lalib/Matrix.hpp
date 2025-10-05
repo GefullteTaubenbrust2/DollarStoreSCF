@@ -47,8 +47,6 @@ namespace flo {
 
 		virtual intern::MatrixScalarProduct<T> operator*(const T& other) const;
 
-		//friend intern::MatrixScalarProduct<T> operator*(const T& scalar, const MatrixBase<T>& matrix);
-
 		virtual intern::MatrixVectorProduct<T> operator*(const Vector<T>& other) const;
 
 		T* getRawData() const;
@@ -86,11 +84,17 @@ namespace flo {
 
 		Matrix<T>& operator=(const LowerTriMatrix<T>& other);
 
+		Matrix<T>& operator=(const SymmetricMatrix<T>& other);
+
+		Matrix<T>& operator=(const HermitianMatrix<T>& other);
+
 		Matrix<T>& operator=(const DiagonalMatrix<T>& other);
 
 		Matrix<T>& operator=(const intern::MatrixProduct<T>& expression);
 
 		Matrix<T>& operator=(const intern::MatrixAlgebra<T>& expression);
+
+		Matrix<T>& operator=(T value);
 
 		virtual size_t getWidth() const override;
 
@@ -132,6 +136,8 @@ namespace flo {
 
 		UpperTriMatrix<T>& operator=(const intern::MatrixAlgebra<T>& expression);
 
+		UpperTriMatrix<T>& operator=(T value);
+
 		void resize(size_t _size);
 
 		virtual size_t getWidth() const override;
@@ -169,6 +175,8 @@ namespace flo {
 
 		LowerTriMatrix<T>& operator=(const intern::MatrixAlgebra<T>& expression);
 
+		LowerTriMatrix<T>& operator=(T value);
+
 		void resize(size_t _size);
 
 		virtual T& at(uint y, uint x) override;
@@ -202,6 +210,8 @@ namespace flo {
 
 		SymmetricMatrix<T>& operator=(const intern::MatrixAlgebra<T>& expression);
 
+		SymmetricMatrix<T>& operator=(T value);
+
 		virtual T operator()(uint y, uint x) const override;
 
 		virtual MatrixSymmetryFlags getLowerSymmetry() const override;
@@ -226,6 +236,8 @@ namespace flo {
 		HermitianMatrix<T>& operator=(const intern::MatrixProduct<T>& expression);
 
 		HermitianMatrix<T>& operator=(const intern::MatrixAlgebra<T>& expression);
+
+		HermitianMatrix<T>& operator=(T value);
 
 		virtual T operator()(uint y, uint x) const override;
 
@@ -258,6 +270,8 @@ namespace flo {
 
 		DiagonalMatrix<T>& operator=(const intern::MatrixAlgebra<T>& expression);
 
+		DiagonalMatrix<T>& operator=(T value);
+
 		virtual size_t getWidth() const override;
 
 		virtual size_t getHeight() const override;
@@ -276,5 +290,5 @@ namespace flo {
 	};
 
 	template<typename T>
-	std::ostream& operator<<(std::ostream& stream, MatrixBase<T>& matrix);
+	std::ostream& operator<<(std::ostream& stream, const MatrixBase<T>& matrix);
 }

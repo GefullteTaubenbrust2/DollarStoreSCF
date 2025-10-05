@@ -21,6 +21,7 @@ namespace flo {
 		int significant_digits = 8;
 		bool adjust_positives = true;
 		bool truncate_zeros = false;
+		bool scientific_notation = true;
 		uint max_mantissa = 4;
 
 		static NumberFormat scientificFormat(uint max_characters, int significant_digits, bool adjust_positives = true, bool truncate_zeros = false);
@@ -64,6 +65,8 @@ namespace flo {
 		bool finish_hline = false;
 		bool start_hline = false;
 
+		uint column_count = 0;
+
 	public:
 		uint horizontal_padding = 2;
 		uint vertical_padding = 0;
@@ -86,7 +89,9 @@ namespace flo {
 
 		char formatRow(TextAlignment alignment);
 
-		char drawHline(char c);
+		uint getColumnCount();
+
+		//char drawHline(char c);
 
 		void offsetRight(uint offset);
 

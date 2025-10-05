@@ -5,7 +5,7 @@
 namespace scf {
 	double getExactCoulombMatrix(uint mu, uint nu);
 
-	double getExactExchangeMatrix(uint mu, uint nu, const Spin spin);
+	double getExactExchangeMatrix(uint mu, uint nu, Spin spin);
 
 	void assignExactRepulsionTensor();
 }

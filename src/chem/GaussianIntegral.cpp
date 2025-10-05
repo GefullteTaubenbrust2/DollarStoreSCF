@@ -75,12 +75,75 @@ namespace flo {
 		return integral;
 	}
 
-	// Dij=2aDi+1j-iDi-1j
-	// Di + 1j = 2aDi + 2j - (i + 1)Dij
-	// Di - 1j = 2aDij - (i - 1)Di - 2j
-	// Dij = 2a(2aDi + 2j - (i + 1)Dij) - i(2aDij - (i - 1)Di - 2j)
-	// Dij = 4a ^ 2Di + 2j - (2a(i + 1) + i2a)Dij + i(i - 1)Di - 2j
+	// Tij = 2aDi+1j - iDi-1j
+	// Tij = 2a(2aSi+2j - (i+1)Sij) - i(2aSij - (i-1)Si-2j)
+	// Tij = 4aaSi+2j - (4ai + 2a)Sij + i(i-1)Si-2j
 	vec2 obaraSaikaKineticEnergy(double S00, double alpha, double beta, double A, double B, double P, uint i, uint j) {
+		/*double eta = alpha + beta;
+		if (j > i) {
+			double X = A;
+			A = B;
+			B = X;
+			double x = alpha;
+			alpha = beta;
+			beta = x;
+			uint k = i;
+			i = j;
+			j = k;
+		}
+		uint ij = i - j;
+		double current_S = S00;
+		double previous_S = 0.0;
+		double current_T = (4.0 * alpha * alpha * ((P - A) * (P - A) + 0.5 / eta) - 2.0 * alpha) * S00;
+		double previous_T = 0.0;
+		for (int k = 0; k < (int)ij - 2; ++k) {
+			double next_S = (P - A) * current_S + 0.5 * k * previous_S / eta;
+			double next_T = (P - A) * current_T + 0.5 * k * previous_T / eta + beta * (2.0 * alpha * next_S - k * previous_S) / eta;
+			previous_S = current_S;
+			current_S = next_S;
+			previous_T = current_T;
+			current_T = next_T;
+		}
+
+		std::vector<double> S, T;
+		uint sj = j + 1;
+		uint si = i + 1;
+		S.resize(si * 3);
+		T.resize(si * 3);
+		for (int k = 0; k < si * 3; ++k) S[k] = 0.0;
+		int index_offset = max(0, (int)ij - 2);
+		S[0] = current_S;
+		T[0] = current_T;
+		for (int k = 1; k < si; ++k) {
+			S[k] = (P - A) * current_S + 0.5 * (k + index_offset - 1) * previous_S / eta;
+			T[k] = (P - A) * current_T + 0.5 * (k + index_offset - 1) * previous_T / eta + beta * (2.0 * alpha * S[k] - (k + index_offset - 1) * previous_S) / eta;
+			previous_S = current_S;
+			current_S = S[k];
+			previous_T = current_T;
+			current_T = T[k];
+		}
+		if (sj > 1) {
+			for (int k = 1; k < si; ++k) {
+				S[k + si] = (P - B) * S[k] + 0.5 * ((k + index_offset) * S[k - 1]) / eta;
+				T[k + si] = (P - B) * T[k] + 0.5 * ((k + index_offset) * T[k - 1]) / eta + 2.0 * alpha * beta * S[k + si] / eta;
+			}
+			for (int l = 1; l < (int)sj - 1; ++l) {
+				for (int k = l - 1; k < si; ++k) {
+					S[k + 2 * si] = (P - B) * S[k + si] + 0.5 * ((k + index_offset) * S[k + si - 1] + l * S[k]) / eta;
+					T[k + 2 * si] = (P - B) * T[k + si] + 0.5 * ((k + index_offset) * T[k + si - 1] + l * T[k]) / eta + alpha * (2.0 * beta * S[k + 2 * si] - l * S[k]) / eta;
+				}
+				for (int k = l - 1; k < si; ++k) {
+					S[k] = S[k + si];
+					S[k + si] = S[k + 2 * si];
+					T[k] = T[k + si];
+					T[k + si] = T[k + 2 * si];
+				}
+			}
+		}
+		else {
+			return vec2(T[si - 1], S[si - 1]);
+		}
+		return vec2(T[si * 2 - 1], S[si * 2 - 1]);*/
 		double eta = alpha + beta;
 		if (j > i) {
 			double X = A;
@@ -115,11 +178,13 @@ namespace flo {
 		}
 		double S1 = 0.0, S2, S3;
 		if (sj > 1) {
+			S[si] = (P - B) * S[0];
 			for (int k = 1; k < si; ++k) {
 				S[k + si] = (P - B) * S[k] + 0.5 * ((k + index_offset) * S[k - 1]) / eta;
 			}
 			for (int l = 1; l < (int)sj - 1; ++l) {
-				for (int k = l - 1; k < si; ++k) {
+				if (l == 1) S[2 * si] = (P - B) * S[si] + 0.5 * l * S[0] / eta;
+				for (int k = l; k < si; ++k) {
 					S[k + 2 * si] = (P - B) * S[k + si] + 0.5 * ((k + index_offset) * S[k + si - 1] + l * S[k]) / eta;
 				}
 				for (int k = l - 1; k < si; ++k) {
@@ -156,19 +221,19 @@ namespace flo {
 
 				for (int k = 0; k < chi_mu.spherical_harmonic.size(); ++k) {
 					for (int l = 0; l < chi_nu.spherical_harmonic.size(); ++l) {
-						vec2 DSijx = obaraSaikaKineticEnergy(S00, chi_mu.primitives[i].zeta, chi_nu.primitives[j].zeta, A.x, B.x, P.x, chi_mu.spherical_harmonic[k].x, chi_nu.spherical_harmonic[l].x);
+						vec2 DSijx = obaraSaikaKineticEnergy(S00 * std::exp(-alpha * beta / eta * (A.x - B.x) * (A.x - B.x)), alpha, beta, A.x, B.x, P.x, chi_mu.spherical_harmonic[k].x, chi_nu.spherical_harmonic[l].x);
 						double& Dijx = DSijx.x;
 						double& Sijx = DSijx.y;
 
-						vec2 DSijy = obaraSaikaKineticEnergy(S00, chi_mu.primitives[i].zeta, chi_nu.primitives[j].zeta, A.y, B.y, P.y, chi_mu.spherical_harmonic[k].y, chi_nu.spherical_harmonic[l].y);
+						vec2 DSijy = obaraSaikaKineticEnergy(S00 * std::exp(-alpha * beta / eta * (A.y - B.y) * (A.y - B.y)), alpha, beta, A.y, B.y, P.y, chi_mu.spherical_harmonic[k].y, chi_nu.spherical_harmonic[l].y);
 						double& Dijy = DSijy.x;
 						double& Sijy = DSijy.y;
 						
-						vec2 DSijz = obaraSaikaKineticEnergy(S00, chi_mu.primitives[i].zeta, chi_nu.primitives[j].zeta, A.z, B.z, P.z, chi_mu.spherical_harmonic[k].z, chi_nu.spherical_harmonic[l].z);
+						vec2 DSijz = obaraSaikaKineticEnergy(S00 * std::exp(-alpha * beta / eta * (A.z - B.z) * (A.z - B.z)), alpha, beta, A.z, B.z, P.z, chi_mu.spherical_harmonic[k].z, chi_nu.spherical_harmonic[l].z);
 						double& Dijz = DSijz.x;
 						double& Sijz = DSijz.y;
 						
-						integral += gaussian_factor * chi_mu.spherical_harmonic[k].weight * chi_nu.spherical_harmonic[l].weight * primitive_factor * (Dijx * Sijy * Sijz + Sijx * Dijy * Sijz + Sijx * Sijy * Dijz);
+						integral += /*gaussian_factor * */chi_mu.spherical_harmonic[k].weight * chi_nu.spherical_harmonic[l].weight * primitive_factor * (Dijx * Sijy * Sijz + Sijx * Dijy * Sijz + Sijx * Sijy * Dijz);
 					}
 				}
 			}
@@ -198,7 +263,6 @@ namespace flo {
 		else {
 			double F = 1.0;
 			double a = 1.0;
-			double F_large = doubleFactorial(2 * (int)m - 1) / pow(2, m + 1) * std::sqrt(PI / pow(x, 2 * m + 1));
 			for (int i = 1; a > 0.000000001; ++i) {
 				a = 2.0 * x / (2 * m + 2 * i + 1) * a;
 				F += a;

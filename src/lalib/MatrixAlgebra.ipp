@@ -519,4 +519,14 @@ namespace intern {
 		return matrix.getWidth();
 	}
 }
+	template<typename T>
+	T dot(const MatrixBase<T>& left, const MatrixBase<T>& right) {
+		T sum = (T)0.0;
+		for (uint x = 0; x < min(left.getWidth(), right.getWidth()); ++x) {
+			for (uint y = 0; y < min(left.getHeight(), right.getHeight()); ++y) {
+				sum += left(y, x) * right(y, x);
+			}
+		}
+		return sum;
+	}
 }

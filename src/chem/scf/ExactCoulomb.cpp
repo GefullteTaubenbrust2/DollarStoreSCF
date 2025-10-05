@@ -91,7 +91,7 @@ namespace scf {
 		return sum;
 	}
 
-	double getExactExchangeMatrix(uint mu, uint nu, const Spin spin) {
+	double getExactExchangeMatrix(uint mu, uint nu, Spin spin) {
 		double sum = 0.0;
 		SymmetricMatrixNd& density = density_matrix[(int)spin];
 		for (uint sigma = 0; sigma < basis.size(); ++sigma) {

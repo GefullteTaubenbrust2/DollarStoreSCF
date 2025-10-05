@@ -37,18 +37,20 @@ namespace flo {
 		}
 	}
 
-	void solveLinear(MatrixNd& A, VectorNd& B, int* ipiv) {
+	void solveLinear(MatrixNd& A, VectorNd& B, VectorNd& x, int* ipiv) {
 		Array<int> buffer;
 		if (!ipiv) {
 			buffer.resize(A.getHeight());
 			ipiv = buffer.getPtr();
 		}
 
+		if (&B != &x) x = B;
+
 		int N = A.getHeight();
 		int nhrs = 1;
 		double* ap = A.getRawData();
 		int lda = A.getHeight();
-		double* bp = B.getRawData();
+		double* bp = x.getRawData();
 		int ldb = A.getHeight();
 		int info = 0;
 
@@ -62,18 +64,20 @@ namespace flo {
 		}
 	}
 
-	void solveLinear(SymmetricMatrixNd& A, VectorNd& B, int* ipiv) {
+	void solveLinear(SymmetricMatrixNd& A, VectorNd& B, VectorNd& x, int* ipiv) {
 		Array<int> buffer;
 		if (!ipiv) {
 			buffer.resize(A.getHeight());
 			ipiv = buffer.getPtr();
 		}
 
+		if (&B != &x) x = B;
+
 		char uplo = 'U';
 		int N = A.getHeight();
-		int nhrs = A.getHeight();
+		int nhrs = 1;
 		double* ap = A.getRawData();
-		double* bp = B.getRawData();
+		double* bp = x.getRawData();
 		int ldb = A.getHeight();
 		int info = 0;
 

@@ -81,7 +81,7 @@ namespace flo {
 
 	template<typename T>
 	Matrix<T>& Matrix<T>::operator=(const UpperTriMatrix<T>& other) {
-		resize(other.size, other.size);
+		resize(other.getWidth(), other.getWidth());
 		for (uint x = 0; x < width; ++x) {
 			for (uint y = 0; y <= x; ++y) {
 				at(y, x) = other.at(y, x);
@@ -102,6 +102,34 @@ namespace flo {
 			}
 			for (uint y = 0; y < x; ++y) {
 				at(y, x) = (T)0.0;
+			}
+		}
+		return *this;
+	}
+
+	template<typename T>
+	Matrix<T>& Matrix<T>::operator=(const SymmetricMatrix<T>& other) {
+		resize(other.getWidth(), other.getWidth());
+		for (uint x = 0; x < width; ++x) {
+			for (uint y = 0; y <= x; ++y) {
+				at(y, x) = other.at(y, x);
+			}
+			for (uint y = x + 1; y < height; ++y) {
+				at(y, x) = other.at(x, y);
+			}
+		}
+		return *this;
+	}
+
+	template<typename T>
+	Matrix<T>& Matrix<T>::operator=(const HermitianMatrix<T>& other) {
+		resize(other.getWidth(), other.getWidth());
+		for (uint x = 0; x < width; ++x) {
+			for (uint y = 0; y <= x; ++y) {
+				at(y, x) = other.at(y, x);
+			}
+			for (uint y = x + 1; y < height; ++y) {
+				at(y, x) = cc(other.at(x, y));
 			}
 		}
 		return *this;
@@ -135,6 +163,24 @@ namespace flo {
 		resize(expression.getWidth(), expression.getHeight());
 		for (uint x = 0; x < width; ++x) {
 			expression.evaluateColumn(*this, 0, height, x);
+		}
+		return *this;
+	}
+
+	template<typename T>
+	Matrix<T>& Matrix<T>::operator=(T value) {
+		for (uint x = 0; x < width; ++x) {
+			for (uint y = x + 1; y < height; ++y) {
+				at(x, y) = 0.0;
+			}
+		}
+		for (uint x = 0; x < width; ++x) {
+			for (uint y = 0; y < x; ++y) {
+				at(x, y) = 0.0;
+			}
+		}
+		for (uint i = 0; i < min(width, height); ++i) {
+			at(i, i) = value;
 		}
 		return *this;
 	}
@@ -255,6 +301,19 @@ namespace flo {
 		resize(min(expression.getWidth(), expression.getHeight()));
 		for (uint x = 0; x < size; ++x) {
 			expression.evaluateColumn(*this, 0, x + 1, x);
+		}
+		return *this;
+	}
+
+	template<typename T>
+	UpperTriMatrix<T>& UpperTriMatrix<T>::operator=(T value) {
+		for (uint x = 0; x < size; ++x) {
+			for (uint y = 0; y < x; ++y) {
+				at(y, x) = 0.0;
+			}
+		}
+		for (uint i = 0; i < size; ++i) {
+			at(i, i) = value;
 		}
 		return *this;
 	}
@@ -381,6 +440,19 @@ namespace flo {
 	}
 
 	template<typename T>
+	LowerTriMatrix<T>& LowerTriMatrix<T>::operator=(T value) {
+		for (uint x = 0; x < LowerTriMatrix<T>::size; ++x) {
+			for (uint y = x + 1; y < LowerTriMatrix<T>::size; ++y) {
+				at(x, y) = 0.0;
+			}
+		}
+		for (uint i = 0; i < LowerTriMatrix::size; ++i) {
+			at(i, i) = value;
+		}
+		return *this;
+	}
+
+	template<typename T>
 	void LowerTriMatrix<T>::resize(size_t _size) {
 		auto& m_size = LowerTriMatrix<T>::size;
 		auto& m_data = LowerTriMatrix<T>::data;
@@ -446,6 +518,9 @@ namespace flo {
 	SymmetricMatrix<T>& SymmetricMatrix<T>::operator=(const intern::MatrixAlgebra<T>& expression) { UpperTriMatrix<T>::operator=(expression); return *this; }
 
 	template<typename T>
+	SymmetricMatrix<T>& SymmetricMatrix<T>::operator=(T value) { UpperTriMatrix<T>::operator=(value); return *this; }
+
+	template<typename T>
 	T SymmetricMatrix<T>::operator()(uint y, uint x) const {
 		if (x >= SymmetricMatrix<T>::size || y >= SymmetricMatrix<T>::size) return (T)0.0;
 		if (x < y) return SymmetricMatrix<T>::columns[y][x];
@@ -482,6 +557,9 @@ namespace flo {
 
 	template<typename T>
 	HermitianMatrix<T>& HermitianMatrix<T>::operator=(const intern::MatrixAlgebra<T>& expression) { UpperTriMatrix<T>::operator=(expression); return *this; }
+
+	template<typename T>
+	HermitianMatrix<T>& HermitianMatrix<T>::operator=(T value) { UpperTriMatrix<T>::operator=(value); return *this; }
 
 	template<typename T>
 	T HermitianMatrix<T>::operator()(uint y, uint x) const {
@@ -571,6 +649,14 @@ namespace flo {
 	}
 
 	template<typename T>
+	DiagonalMatrix<T>& DiagonalMatrix<T>::operator=(T value) {
+		for (uint i = 0; i < size; ++i) {
+			at(i, i) = value;
+		}
+		return *this;
+	}
+
+	template<typename T>
 	size_t DiagonalMatrix<T>::getWidth() const {
 		return size;
 	}
@@ -641,7 +727,7 @@ namespace flo {
 	}
 
 	template<typename T>
-	std::ostream& operator<<(std::ostream& stream, MatrixBase<T>& matrix) {
+	std::ostream& operator<<(std::ostream& stream, const MatrixBase<T>& matrix) {
 		stream << '[';
 		for (uint y = 0; y < matrix.getHeight(); ++y) {
 			stream << '[';

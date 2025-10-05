@@ -30,6 +30,7 @@ namespace flo {
 		result.adjust_positives = adjust_positives;
 		result.truncate_zeros = false;
 		result.max_mantissa = max_characters;
+		result.scientific_notation = false;
 		return result;
 	}
 
@@ -40,6 +41,7 @@ namespace flo {
 		result.adjust_positives = false;
 		result.truncate_zeros = false;
 		result.max_mantissa = max_characters;
+		result.scientific_notation = false;
 		return result;
 	}
 
@@ -100,7 +102,7 @@ namespace flo {
 		if (x == 0.0) {
 			return "0." + std::string(format.significant_digits > 0 ? (format.significant_digits - 1) : -format.significant_digits, '0');
 		}
-		if (x >= mantissa_upper || x <= mantissa_lower) {
+		if ((x >= mantissa_upper || x <= mantissa_lower) && format.scientific_notation) {
 			std::string exponent_str = "E";
 			int exponent = 0;
 			while (x >= 10.0) {
@@ -150,6 +152,10 @@ namespace flo {
 			if (format.significant_digits > 0) {
 				x += 5.0 * pow(0.1, format.significant_digits);
 			}
+			while (x >= 10.0) {
+				x /= 10.0;
+				++exponent;
+			}
 
 			std::string full_string = intToString(x * pow(10.0, format.significant_digits < 0 ? (-format.significant_digits + exponent) : format.significant_digits - 1));
 
@@ -161,11 +167,11 @@ namespace flo {
 			if (x - (i64)x != 0.0) {
 				output += '.';
 
-				for (int i = 1; i < -exponent; ++i) {
+				for (int i = 1; i < -exponent && output.size() < format.max_characters; ++i) {
 					output += '0';
 				}
 
-				std::string decimal_string = safeSubstr(full_string, max(0, exponent + 1), exponent + decimals + 1);
+				std::string decimal_string = safeSubstr(full_string, max(0, exponent + 1), max(0, exponent + (int)decimals + 1));
 
 				if (format.truncate_zeros) truncateZeros(decimal_string);
 
@@ -188,7 +194,7 @@ namespace flo {
 			++exponent;
 		}
 
-		if (exponent + 1 > format.significant_digits || exponent + 1 + output.size() > format.max_characters) {
+		if ((exponent + 1 > format.significant_digits || exponent + 1 + output.size() > format.max_characters) && format.scientific_notation) {
 			std::string exponent_string = exponent > 0 ? "E+" : "E-";
 			exponent_string += intToString(exponent);
 
@@ -213,7 +219,7 @@ namespace flo {
 	// ------------------------------------------------------------------------------------------------------------------------------------------- //
 
 	FormattedStream::Cell& FormattedStream::getCurrentCell() {
-		while (current_cell >= cells.size()) addRow(NumberFormat(), TextAlignment::left, 16);
+		while (current_cell >= cells.size()) cells.push_back(Cell(NumberFormat(), TextAlignment::left, 16));
 		return cells[current_cell];
 	}
 
@@ -456,11 +462,13 @@ namespace flo {
 	void FormattedStream::resetRows() {
 		flush();
 		current_cell = 0;
+		column_count = 0;
 		cells.clear();
 	}
 
 	void FormattedStream::addRow(const NumberFormat& number_format, TextAlignment alignment, uint width) {
 		cells.push_back(Cell(number_format, alignment, width));
+		++column_count;
 	}
 
 	char FormattedStream::formatRow(const NumberFormat& number_format) {
@@ -471,6 +479,10 @@ namespace flo {
 	char FormattedStream::formatRow(TextAlignment alignment) {
 		getCurrentCell().alignment = alignment;
 		return ' ';
+	}
+
+	uint FormattedStream::getColumnCount() {
+		return column_count;
 	}
 
 	void FormattedStream::offsetRight(uint offset) {

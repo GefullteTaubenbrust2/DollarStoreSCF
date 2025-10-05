@@ -9,7 +9,15 @@ namespace scf {
 
 	void printMullikenPopulations();
 
+	void printMullikenBondOrders();
+
 	void calculateLowdinPopulations();
 
 	void printLowdinPopulations();
+
+	void printWibergBondOrders();
+
+	void printMayerValence();
+
+	void printMayerBondOrders();
 }

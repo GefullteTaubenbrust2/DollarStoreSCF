@@ -16,20 +16,20 @@ namespace flo {
 		int am = std::abs(m);
 
 		spherical_harmonic.reserve((am - (am < 0 ? 1 : 0)) / 2 + 1);
-		for (int i = 0, x = m < 0 ? 1 : 0; x <= am; x += 2, ++i) {
+		for (int i = 0, x = m <= 0 ? am : (am - 1); x >= 0; x -= 2, ++i) {
 			spherical_harmonic.push_back(CartesianPolynomialTerm((i & 1 ? -1.0 : 1.0) * binomial((double)am, (double)x), x, am - x, 0));
 		}
 
-		double legendre_factor = (am & 1 ? -1.0 : 1.0) * doubleFactorial(2.0 * (double)am - 1.0);
+		double legendre_factor = doubleFactorial(2.0 * (double)am - 1.0);
 		if (m < 0) {
-			legendre_factor *= (am & 1 ? -1.0 : 1.0) * (double)factorial(l - am) / (double)factorial(l + am);
+			legendre_factor *= (double)factorial(l - am) / (double)factorial(l + am);
 		}
 
 		for (int i = 0; i < spherical_harmonic.size(); ++i) {
 			spherical_harmonic[i].weight *= legendre_factor;
 		}
 
-		double y_normalization = (m & 1 ? -1.0 : 1.0) * std::sqrt((double)(2 * l + 1) * (double)factorial(l - m) / (4.0 * PI * (double)factorial(l + m)));
+		double y_normalization = std::sqrt((double)(2 * l + 1) * (double)factorial(l - m) / (4.0 * PI * (double)factorial(l + m)));
 		if (m) y_normalization *= std::sqrt(2.0);
 
 		if (l > am) {

@@ -28,12 +28,6 @@ namespace intern {
 	};
 
 	template<typename T>
-	T evaluateDiagonal(const MatrixBase<T>& m1, const MatrixBase<T>& m2, MultiplicationFlags flags, uint y, uint x);
-
-	template<typename T>
-	T evaluateSum(const MatrixBase<T>& m1, const MatrixBase<T>& m2, MultiplicationFlags flags, uint y, uint x, uint min, uint max);
-
-	template<typename T>
 	struct MatrixProduct {
 		const MatrixBase<T>& left;
 		const MatrixBase<T>& right;
@@ -135,4 +129,6 @@ namespace intern {
 		virtual size_t getHeight() const override;
 	};
 }
+	template<typename T>
+	T dot(const MatrixBase<T>& left, const MatrixBase<T>& right);
 }

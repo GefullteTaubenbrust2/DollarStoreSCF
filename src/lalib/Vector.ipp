@@ -179,7 +179,7 @@ namespace flo {
 	template<typename T>
 	std::ostream& operator<<(std::ostream& outs, const Vector<T>& v) {
 		outs << '[';
-		for (uint i = 0; i < v.size() - 1; ++i) {
+		for (int i = 0; i < (int)v.size() - 1; ++i) {
 			outs << v[i] << ", ";
 		}
 		if (v.size() > 1) outs << v[v.size() - 1];

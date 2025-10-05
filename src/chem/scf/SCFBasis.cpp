@@ -34,6 +34,8 @@ namespace scf {
 
 		if (multiplicity == 1) spin_treatment = SpinTreatment::restricted;
 		else spin_treatment = SpinTreatment::unrestricted;
+
+		open_shell = multiplicity > 1;
 	}
 
 	void assignBasis(const BasisSet& basis_set, uint atom_index) {
@@ -93,6 +95,9 @@ namespace scf {
 		orthogonalization_matrix = (asymmetric_buffer[2] = asymmetric_buffer[0] * eigenvalue_matrix) * (asymmetric_buffer[1] = T(asymmetric_buffer[0]));
 	}
 
+	int p_permutations[3] = { 0, -1, 1 };
+	int d_permutations[5] = { 0, -1, 1, -2, 2 };
+
 	void constructBasis() {
 		basis.clear();
 		for (int i = 0; i < molecule.size(); ++i) {
@@ -102,6 +107,9 @@ namespace scf {
 				return;
 			}
 		}
+
+		atom_basis.reserve(molecule.size() + 1);
+		atom_basis.push_back(0);
 
 		for (int i = 0; i < molecule.size(); ++i) {
 			vec3 center = molecule[i].position;
@@ -113,10 +121,15 @@ namespace scf {
 				basis_atoms.reserve(basis.size() + 2 * l + 1);
 
 				for (int m = -(int)l; m <= (int)l; ++m) {
-					basis.push_back(ContractedGaussian(shell.primitives, l, m, center));
+					int ma = m;
+					if (l == 1) ma = p_permutations[m + 1];
+					if (l == 2) ma = d_permutations[m + 2];
+					basis.push_back(ContractedGaussian(shell.primitives, l, ma, center));
 					basis_atoms.push_back(i);
 				}
 			}
+
+			atom_basis.push_back(basis.size());
 		}
 
 		matrix_size = basis.size();

@@ -4,8 +4,11 @@
 #include "SCFSolver.hpp"
 
 namespace scf {
+	extern bool open_shell;
+
 	extern std::vector<flo::ContractedGaussian> basis;
 	extern std::vector<uint> basis_atoms;
+	extern std::vector<uint> atom_basis;
 
 	extern flo::SymmetricMatrixNd kinetic_energy_matrix;
 	extern flo::SymmetricMatrixNd nuclear_attraction_matrix;
@@ -20,6 +23,7 @@ namespace scf {
 	extern flo::MatrixNd coefficient_matrix[2];
 	extern flo::SymmetricMatrixNd fock_matrix[2];
 	extern flo::SymmetricMatrixNd density_matrix[2];
+	extern flo::SymmetricMatrixNd total_density_matrix;
 
 	extern uint electron_count[2];
 
