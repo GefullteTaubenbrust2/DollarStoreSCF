@@ -36,6 +36,7 @@ namespace scf {
 		else spin_treatment = SpinTreatment::unrestricted;
 
 		open_shell = multiplicity > 1;
+		net_charge = charge;
 	}
 
 	void assignBasis(const BasisSet& basis_set, uint atom_index) {
@@ -95,8 +96,8 @@ namespace scf {
 		orthogonalization_matrix = (asymmetric_buffer[2] = asymmetric_buffer[0] * eigenvalue_matrix) * (asymmetric_buffer[1] = T(asymmetric_buffer[0]));
 	}
 
-	int p_permutations[3] = { 0, -1, 1 };
-	int d_permutations[5] = { 0, -1, 1, -2, 2 };
+	//int p_permutations[3] = { 0, -1, 1 };
+	//int d_permutations[5] = { 0, -1, 1, -2, 2 };
 
 	void constructBasis() {
 		basis.clear();
@@ -121,10 +122,9 @@ namespace scf {
 				basis_atoms.reserve(basis.size() + 2 * l + 1);
 
 				for (int m = -(int)l; m <= (int)l; ++m) {
-					int ma = m;
-					if (l == 1) ma = p_permutations[m + 1];
-					if (l == 2) ma = d_permutations[m + 2];
-					basis.push_back(ContractedGaussian(shell.primitives, l, ma, center));
+					//if (l == 1) ma = p_permutations[m + 1];
+					//if (l == 2) ma = d_permutations[m + 2];
+					basis.push_back(ContractedGaussian(shell.primitives, l, m, center));
 					basis_atoms.push_back(i);
 				}
 			}

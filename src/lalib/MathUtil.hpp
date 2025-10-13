@@ -242,4 +242,7 @@ namespace flo {
 
 	typedef Vector2<double> vec2;
 	typedef Vector3<double> vec3;
+
+	typedef Vector2<int> vec2i;
+	typedef Vector3<int> vec3i;
 }

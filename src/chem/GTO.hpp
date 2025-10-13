@@ -19,6 +19,7 @@ namespace flo {
 	struct GTOPrimitive {
 		double zeta = 0.0;
 		double weight = 0.0;
+		double unnormalized_weight = 0.0;
 
 		GTOPrimitive() = default;
 

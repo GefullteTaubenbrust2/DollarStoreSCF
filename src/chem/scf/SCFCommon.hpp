@@ -5,6 +5,7 @@
 
 namespace scf {
 	extern bool open_shell;
+	extern int net_charge;
 
 	extern std::vector<flo::ContractedGaussian> basis;
 	extern std::vector<uint> basis_atoms;

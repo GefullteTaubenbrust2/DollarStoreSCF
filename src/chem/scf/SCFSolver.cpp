@@ -368,17 +368,6 @@ namespace scf {
 		fout.resetRows();
 		fout << '\n';
 
-		/*fout.resetRows();
-		fout.offsetRight(2);
-		fout.addRow(NumberFormat::crudeFormat(5, 5), TextAlignment::right, 5);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-		fout << core_hamiltonian << orthogonalization_matrix << kinetic_energy_matrix;*/
-
 		fout.resetRows();
 		fout.addRow(NumberFormat(), flo::TextAlignment::left, 9);
 		fout.addRow(NumberFormat(), flo::TextAlignment::centered, 16);
@@ -416,5 +405,16 @@ namespace scf {
 		if (spin_treatment == SpinTreatment::unrestricted) printSpinContamination();
 
 		printMOLevels();
+
+		fout.resetRows();
+		fout.offsetRight(2);
+		fout.addRow(NumberFormat::crudeFormat(5, 5), TextAlignment::right, 5);
+		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
+		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
+		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
+		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
+		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
+		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
+		fout << coefficient_matrix[0];
 	}
 }

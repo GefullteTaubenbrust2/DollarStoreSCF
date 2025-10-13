@@ -100,7 +100,8 @@ namespace flo {
 		double mantissa_upper = pow(10.0, format.max_mantissa);
 		double mantissa_lower = pow(0.1, format.max_mantissa);
 		if (x == 0.0) {
-			return "0." + std::string(format.significant_digits > 0 ? (format.significant_digits - 1) : -format.significant_digits, '0');
+			int zero_count = clamp(format.significant_digits > 0 ? (format.significant_digits - 1) : -format.significant_digits, 0, (int)format.max_characters - 2 - (int)output.size());
+			return output + "0." + std::string(zero_count, '0');
 		}
 		if ((x >= mantissa_upper || x <= mantissa_lower) && format.scientific_notation) {
 			std::string exponent_str = "E";

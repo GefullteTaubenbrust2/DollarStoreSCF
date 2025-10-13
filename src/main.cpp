@@ -11,6 +11,7 @@
 #include "util/Time.hpp"
 #include "util/FormattedStream.hpp"
 #include "chem/scf/Title.hpp"
+#include "chem/scf/WriteOrbitals.hpp"
 
 using namespace flo;
 
@@ -35,6 +36,8 @@ int main() {
 	scf::printWibergBondOrders();
 	scf::printMayerBondOrders();
 	scf::printMayerValence();
+	scf::writeOrbitalsMolden("test/water.molden");
+	scf::writeOrbitalsWFX("test/water.wfx", true);
 
 	system("pause");
 	return 0;

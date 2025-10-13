@@ -10,7 +10,7 @@ namespace flo {
 	}
 
 	GTOPrimitive::GTOPrimitive(double zeta, double weight) :
-	zeta(zeta), weight(weight) {}
+	zeta(zeta), unnormalized_weight(weight) {}
 
 	ContractedGaussian::ContractedGaussian(const std::vector<GTOPrimitive>& p, uint l, int m) : primitives(p), l (l) {
 		int am = std::abs(m);
@@ -89,7 +89,7 @@ namespace flo {
 
 		for (int i = 0; i < primitives.size(); ++i) {
 			double normalization_factor = (std::pow(2.0 * primitives[i].zeta, (double)l + 1.5) * std::pow(2.0, (double)l + 2)) / (std::sqrt(PI) * doubleFactorial(2.0 * (double)l + 1.0));
-			primitives[i].weight *= std::sqrt(normalization_factor);
+			primitives[i].weight = primitives[i].unnormalized_weight * std::sqrt(normalization_factor);
 		}
 	}
 

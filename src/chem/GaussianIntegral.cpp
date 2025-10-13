@@ -23,7 +23,7 @@ namespace flo {
 			current = next;
 		}
 		if (!min(i, j)) return current;
-		std::vector<double> S;
+		std::vector<double>& S = float_buffer[0];
 		uint s = min(i, j) + 1;
 		S.resize(s * 3);
 		S[0] = current;
@@ -79,71 +79,6 @@ namespace flo {
 	// Tij = 2a(2aSi+2j - (i+1)Sij) - i(2aSij - (i-1)Si-2j)
 	// Tij = 4aaSi+2j - (4ai + 2a)Sij + i(i-1)Si-2j
 	vec2 obaraSaikaKineticEnergy(double S00, double alpha, double beta, double A, double B, double P, uint i, uint j) {
-		/*double eta = alpha + beta;
-		if (j > i) {
-			double X = A;
-			A = B;
-			B = X;
-			double x = alpha;
-			alpha = beta;
-			beta = x;
-			uint k = i;
-			i = j;
-			j = k;
-		}
-		uint ij = i - j;
-		double current_S = S00;
-		double previous_S = 0.0;
-		double current_T = (4.0 * alpha * alpha * ((P - A) * (P - A) + 0.5 / eta) - 2.0 * alpha) * S00;
-		double previous_T = 0.0;
-		for (int k = 0; k < (int)ij - 2; ++k) {
-			double next_S = (P - A) * current_S + 0.5 * k * previous_S / eta;
-			double next_T = (P - A) * current_T + 0.5 * k * previous_T / eta + beta * (2.0 * alpha * next_S - k * previous_S) / eta;
-			previous_S = current_S;
-			current_S = next_S;
-			previous_T = current_T;
-			current_T = next_T;
-		}
-
-		std::vector<double> S, T;
-		uint sj = j + 1;
-		uint si = i + 1;
-		S.resize(si * 3);
-		T.resize(si * 3);
-		for (int k = 0; k < si * 3; ++k) S[k] = 0.0;
-		int index_offset = max(0, (int)ij - 2);
-		S[0] = current_S;
-		T[0] = current_T;
-		for (int k = 1; k < si; ++k) {
-			S[k] = (P - A) * current_S + 0.5 * (k + index_offset - 1) * previous_S / eta;
-			T[k] = (P - A) * current_T + 0.5 * (k + index_offset - 1) * previous_T / eta + beta * (2.0 * alpha * S[k] - (k + index_offset - 1) * previous_S) / eta;
-			previous_S = current_S;
-			current_S = S[k];
-			previous_T = current_T;
-			current_T = T[k];
-		}
-		if (sj > 1) {
-			for (int k = 1; k < si; ++k) {
-				S[k + si] = (P - B) * S[k] + 0.5 * ((k + index_offset) * S[k - 1]) / eta;
-				T[k + si] = (P - B) * T[k] + 0.5 * ((k + index_offset) * T[k - 1]) / eta + 2.0 * alpha * beta * S[k + si] / eta;
-			}
-			for (int l = 1; l < (int)sj - 1; ++l) {
-				for (int k = l - 1; k < si; ++k) {
-					S[k + 2 * si] = (P - B) * S[k + si] + 0.5 * ((k + index_offset) * S[k + si - 1] + l * S[k]) / eta;
-					T[k + 2 * si] = (P - B) * T[k + si] + 0.5 * ((k + index_offset) * T[k + si - 1] + l * T[k]) / eta + alpha * (2.0 * beta * S[k + 2 * si] - l * S[k]) / eta;
-				}
-				for (int k = l - 1; k < si; ++k) {
-					S[k] = S[k + si];
-					S[k + si] = S[k + 2 * si];
-					T[k] = T[k + si];
-					T[k + si] = T[k + 2 * si];
-				}
-			}
-		}
-		else {
-			return vec2(T[si - 1], S[si - 1]);
-		}
-		return vec2(T[si * 2 - 1], S[si * 2 - 1]);*/
 		double eta = alpha + beta;
 		if (j > i) {
 			double X = A;
@@ -164,7 +99,7 @@ namespace flo {
 			previous = current;
 			current = next;
 		}
-		std::vector<double> S;
+		std::vector<double>& S = float_buffer[0];
 		uint sj = j + 1;
 		uint si = i + 3 - max(0, (int)ij - 2);
 		S.resize(si * 3);
@@ -284,8 +219,12 @@ namespace flo {
 		uint ij = i - j;
 		uint sj = j + 1;
 		uint sN = N + i + j + 1;
-		std::vector<double> buffer1(sj * sN), buffer2(sj * sN), buffer3(sj * sN);
-		std::vector<double>* previous = &buffer1, *current = &buffer2, *next = &buffer3;
+
+		float_buffer[0].resize(sj * sN);
+		float_buffer[1].resize(sj * sN);
+		float_buffer[2].resize(sj * sN);
+
+		std::vector<double>* previous = &float_buffer[0], *current = &float_buffer[1], *next = &float_buffer[2];
 		for (int M = 0; M < sN; ++M) {
 			(*current)[M] = buffer[M];
 		}
@@ -352,7 +291,8 @@ namespace flo {
 				uint N2 = N1 + exponents_mu[1] + exponents_nu[1];
 				uint N3 = N2 + exponents_mu[0] + exponents_nu[0];
 
-				std::vector<double> buffer(N3 + 1);
+				std::vector<double>& buffer = float_buffer[3];
+				buffer.resize(N3 + 1);
 
 				double angular_weight = chi_mu.spherical_harmonic[k].weight * chi_nu.spherical_harmonic[l].weight;
 

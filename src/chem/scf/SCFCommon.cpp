@@ -2,6 +2,7 @@
 
 namespace scf {
 	bool open_shell = false;
+	int net_charge = 0;
 
 	std::vector<flo::ContractedGaussian> basis;
 	std::vector<uint> basis_atoms;
