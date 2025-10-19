@@ -131,4 +131,6 @@ namespace flo {
 			return Time(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count(), nanosecond);
 		}
 	};
+
+	extern Stopclock global_stopclock;
 }

@@ -220,7 +220,7 @@ namespace flo {
 	// ------------------------------------------------------------------------------------------------------------------------------------------- //
 
 	FormattedStream::Cell& FormattedStream::getCurrentCell() {
-		while (current_cell >= cells.size()) cells.push_back(Cell(NumberFormat(), TextAlignment::left, 16));
+		while (current_cell >= cells.size()) cells.push_back(Cell(NumberFormat(), TextAlignment::left, 16, padding));
 		return cells[current_cell];
 	}
 
@@ -232,21 +232,10 @@ namespace flo {
 		bool has_content = content.size();
 
 		if (finish_hline) {
-			if (hline_string.size()) {
-				for (int i = 0; i < vertical_padding; ++i) {
-					(*write_to) << std::string(left_offset, ' ');
-					for (int j = 0; j < hline_string.size(); ++j) {
-						if (hline_string[j] == vertical_line || hline_string[j] == line_intersection) (*write_to) << vertical_line;
-						else (*write_to) << ' ';
-					}
-					(*write_to) << '\n';
-				}
-			}
-
 			int width = 0;
 			int x = 0;
 			for (int i = 0; i < cells.size(); ++i) {
-				int cell_width = (i == cells.size() - 1) ? 1 : cells[i].width + horizontal_padding * 2 + 1;
+				int cell_width = (i == cells.size() - 1) ? 1 : cells[i].width + (cells[i].padding.left + cells[i].padding.right) + 1;
 				width += cell_width;
 
 				if (hline_string.size() < width) hline_string.resize(width, ' ');
@@ -281,21 +270,6 @@ namespace flo {
 			hline_string = "";
 
 			finish_hline = false;
-
-			if (has_content) {
-				for (int i = 0; i < vertical_padding; ++i) {
-					(*write_to) << std::string(left_offset, ' ');
-					for (int j = 0; j < cells.size(); ++j) {
-						if (cells[j].separator_before) (*write_to) << vertical_line;
-						else (*write_to) << " ";
-
-						if (j == cells.size() - 1) break;
-
-						(*write_to) << std::string(cells[j].width + horizontal_padding * 2, ' ');
-					}
-					(*write_to) << '\n';
-				}
-			}
 		}
 
 		hline_string = "";
@@ -318,14 +292,22 @@ namespace flo {
 
 			if (i == cells.size() - 1) break;
 
-			if (cells[i].hline_bottom) hline_string += std::string(cells[i].width + horizontal_padding * 2, horizontal_line);
-			else hline_string += std::string(cells[i].width + horizontal_padding * 2, ' ');
+			if (cells[i].hline_bottom) hline_string += std::string(cells[i].width + (cells[i].padding.left + cells[i].padding.right), horizontal_line);
+			else hline_string += std::string(cells[i].width + (cells[i].padding.left + cells[i].padding.right), ' ');
 		}
 		if (start_hline) {
 			start_hline = false;
 			finish_hline = true;
 		}
 
+		for (int i = 0; i < cells.size() && i < content.size(); ++i) {
+			if (cells[i].padding.bottom) {
+				int a = 5;
+			}
+			content[i] += std::string(cells[i].padding.bottom, '\n');
+		}
+
+		int line_count = 0;
 		while (has_content) {
 			(*write_to) << std::string(left_offset, ' ');
 
@@ -340,7 +322,11 @@ namespace flo {
 				uint chars_since_space = 5;
 				std::string line;
 
-				if (cell_content.size() > max_width) {
+				if (line_count < cells[i].padding.top) {
+					line = "";
+					has_content = true;
+				}
+				else if (cell_content.size() > max_width) {
 					for (int j = 0; j < cell_content.size() && j < max_width; ++j) {
 						char c = cell_content[j];
 						if (c == ' ') {
@@ -357,6 +343,7 @@ namespace flo {
 							break_on_space = false;
 							space_number = 0;
 							linebreak_index = j;
+							has_content = true;
 							break;
 						}
 						else if (space_number < 1) {
@@ -389,14 +376,27 @@ namespace flo {
 					}
 				}
 				else {
-					line = cell_content;
-					cell_content = "";
+					bool linebreak = false;
+					for (int j = 0; j < cell_content.size(); ++j) {
+						char c = cell_content[j];
+						if (c == '\n') {
+							line = safeSubstr(cell_content, 0, j);
+							cell_content = safeSubstr(cell_content, j + 1, cell_content.size());
+							linebreak = true;
+							has_content = true;
+							break;
+						}
+					}
+					if (!linebreak) {
+						line = cell_content;
+						cell_content = "";
+					}
 				}
 
 				if (cells[i].separator_before) (*write_to) << vertical_line;
 				else (*write_to) << " ";
 
-				(*write_to) << std::string(horizontal_padding, ' ');
+				(*write_to) << std::string(cells[i].padding.left, ' ');
 
 				switch (cells[i].alignment) {
 				case TextAlignment::left:
@@ -444,10 +444,12 @@ namespace flo {
 					break;
 				}
 
-				(*write_to) << std::string(horizontal_padding, ' ');
+				(*write_to) << std::string(cells[i].padding.right, ' ');
 			}
 			if (cells.size() > content.size()) if (cells[cells.size() - 1].separator_before) (*write_to) << std::string(1, vertical_line);
 			(*write_to) << '\n';
+
+			++line_count;
 		}
 		content.clear();
 		current_cell = 0;
@@ -460,6 +462,13 @@ namespace flo {
 		}
 	}
 
+	// ------------------------------------------------------------------------------------------------------------------------------------------- //
+
+	TextPadding::TextPadding(uint left, uint right, uint top, uint bottom) : 
+	left(left), right(right), top(top), bottom(bottom) {}
+
+	// ------------------------------------------------------------------------------------------------------------------------------------------- //
+
 	void FormattedStream::resetRows() {
 		flush();
 		current_cell = 0;
@@ -468,7 +477,12 @@ namespace flo {
 	}
 
 	void FormattedStream::addRow(const NumberFormat& number_format, TextAlignment alignment, uint width) {
-		cells.push_back(Cell(number_format, alignment, width));
+		cells.push_back(Cell(number_format, alignment, width, padding));
+		++column_count;
+	}
+
+	void FormattedStream::addRow(const NumberFormat& number_format, TextAlignment alignment, uint width, TextPadding padding) {
+		cells.push_back(Cell(number_format, alignment, width, padding));
 		++column_count;
 	}
 
@@ -493,7 +507,7 @@ namespace flo {
 	void FormattedStream::centerTable(uint available) {
 		uint total_width = 1;
 		for (int i = 0; i < cells.size(); ++i) {
-			total_width += cells[i].width + horizontal_padding * 2 + 1;
+			total_width += cells[i].width + (cells[i].padding.left + cells[i].padding.right) + 1;
 		}
 		left_offset = max(0, ((int)available - (int)total_width) / 2);
 	}

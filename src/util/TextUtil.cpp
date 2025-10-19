@@ -2,7 +2,7 @@
 
 namespace flo {
 	std::string safeSubstr(const std::string& str, uint start, uint end) {
-		if (start >= str.size()) start = str.size() - 1;
+		if (start > str.size()) start = str.size();
 		if (end >= str.size()) end = str.size();
 		if (start >= end) return "";
 		return str.substr(start, end - start);

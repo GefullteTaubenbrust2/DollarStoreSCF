@@ -37,18 +37,30 @@ namespace flo {
 
 	std::string toFormattedString(i64 x, const NumberFormat& format);
 
+	struct TextPadding {
+		uint left = 0;
+		uint right = 0;
+		uint top = 0;
+		uint bottom = 0;
+
+		TextPadding() = default;
+
+		TextPadding(uint left, uint right, uint top, uint bottom);
+	};
+
 	struct FormattedStream {
 	private:
 		struct Cell {
 			NumberFormat number_format;
 			TextAlignment alignment = TextAlignment::left;
 			uint width = 16;
+			TextPadding padding;
 			bool separator_before = false;
 			bool hline_top = false;
 			bool hline_bottom = false;
 
-			Cell(NumberFormat number_format, TextAlignment alignment, uint width) :
-			number_format(number_format), alignment(alignment), width(width) {}
+			Cell(NumberFormat number_format, TextAlignment alignment, uint width, TextPadding padding) :
+			number_format(number_format), alignment(alignment), width(width), padding(padding) {}
 		};
 
 		std::vector<Cell> cells;
@@ -68,8 +80,7 @@ namespace flo {
 		uint column_count = 0;
 
 	public:
-		uint horizontal_padding = 2;
-		uint vertical_padding = 0;
+		TextPadding padding;
 
 		char vertical_line = '|';
 		char horizontal_line = '-';
@@ -85,13 +96,13 @@ namespace flo {
 
 		void addRow(const NumberFormat& number_format, TextAlignment alignment, uint width);
 
+		void addRow(const NumberFormat& number_format, TextAlignment alignment, uint width, TextPadding padding);
+
 		char formatRow(const NumberFormat& number_format);
 
 		char formatRow(TextAlignment alignment);
 
 		uint getColumnCount();
-
-		//char drawHline(char c);
 
 		void offsetRight(uint offset);
 

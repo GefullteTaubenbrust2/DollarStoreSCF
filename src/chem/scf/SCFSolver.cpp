@@ -8,6 +8,7 @@
 #include "../GTO.hpp"
 
 #include "../../util/FormattedStream.hpp"
+#include "../../util/Time.hpp"
 
 #include "../../lalib/Lapack.hpp"
 #include "../../lalib/PrintMatrix.h"
@@ -359,12 +360,14 @@ namespace scf {
 		fout << '|' << '_' << " " << '|' << '\n';
 		fout.resetRows();
 
+		global_stopclock.reset();
 		assignExactRepulsionTensor();
+		double runtime = global_stopclock.stop();
 
 		fout.resetRows();
 		fout.addRow(NumberFormat(), flo::TextAlignment::centered, 33);
 		fout.centerTable(100);
-		fout << '|' << '_' << '-' << "Done!" << '|' << '\n';
+		fout << '|' << '_' << '-' << "Done in" << runtime << " s!" << '|' << '\n';
 		fout.resetRows();
 		fout << '\n';
 
@@ -409,12 +412,12 @@ namespace scf {
 		fout.resetRows();
 		fout.offsetRight(2);
 		fout.addRow(NumberFormat::crudeFormat(5, 5), TextAlignment::right, 5);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
+		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12, TextPadding(2, 0, 0, 0));
+		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12, TextPadding(0, 0, 0, 0));
+		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12, TextPadding(0, 0, 0, 0));
+		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12, TextPadding(0, 0, 0, 0));
+		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12, TextPadding(0, 0, 0, 0));
+		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12, TextPadding(0, 2, 0, 0));
 		fout << coefficient_matrix[0];
 	}
 }

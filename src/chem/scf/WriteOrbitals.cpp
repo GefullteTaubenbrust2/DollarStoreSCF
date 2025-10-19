@@ -40,7 +40,6 @@ namespace scf {
 
 		FormattedStream fstream;
 		fstream.write_to = &file;
-		fstream.horizontal_padding = 0;
 
 		fstream.addRow(NumberFormat(), TextAlignment::left, 2);
 		fstream.addRow(NumberFormat::crudeFormatPositive(4, 4), TextAlignment::right, 4);
@@ -206,7 +205,6 @@ namespace scf {
 
 		FormattedStream fstream;
 		fstream.write_to = &file;
-		fstream.horizontal_padding = 0;
 
 		file << "<Title>\n";
 		file << "Dollar Store SCF output\n";

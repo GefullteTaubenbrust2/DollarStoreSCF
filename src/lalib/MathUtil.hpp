@@ -1,5 +1,6 @@
 #pragma once
 #include <cmath>
+#include <iostream>
 #include "../util/Types.hpp"
 
 namespace flo {
@@ -116,6 +117,54 @@ namespace flo {
 			return Vector2<T>(x / other, y / other);
 		}
 
+		Vector2<T> operator+=(const Vector2<T>& other) {
+			x += other.x;
+			y += other.y;
+			return *this;
+		}
+
+		Vector2<T> operator+=(const T& other) {
+			x += other;
+			y += other;
+			return *this;
+		}
+
+		Vector2<T> operator-=(const Vector2<T>& other) {
+			x -= other.x;
+			y -= other.y;
+			return *this;
+		}
+
+		Vector2<T> operator-=(const T& other) {
+			x -= other;
+			y -= other;
+			return *this;
+		}
+
+		Vector2<T> operator*=(const Vector2<T>& other) {
+			x *= other.x;
+			y *= other.y;
+			return *this;
+		}
+
+		Vector2<T> operator*=(const T& other) {
+			x *= other;
+			y *= other;
+			return *this;
+		}
+
+		Vector2<T> operator/=(const Vector2<T>& other) {
+			x /= other.x;
+			y /= other.y;
+			return *this;
+		}
+
+		Vector2<T> operator/=(const T& other) {
+			x /= other;
+			y /= other;
+			return *this;
+		}
+
 		friend Vector2<T> operator/(const T& a, const Vector2<T>& b) {
 			return Vector2<T>(a / b.x, a / b.y);
 		}
@@ -149,6 +198,12 @@ namespace flo {
 	template<typename T>
 	T length(const Vector2<T>& x) {
 		return std::sqrt(dot(x, x));
+	}
+
+	template<typename T>
+	std::ostream& operator<<(std::ostream& stream, const Vector2<T>& v) {
+		stream << '[' << v.x << ", " << v.y << ']';
+		return stream;
 	}
 
 	template<typename T>
@@ -205,6 +260,62 @@ namespace flo {
 			return Vector3<T>(x / other, y / other, z / other);
 		}
 
+		Vector3<T> operator+=(const Vector3<T>& other) {
+			x += other.x;
+			y += other.y;
+			z += other.z;
+			return *this;
+		}
+
+		Vector3<T> operator+=(const T& other) {
+			x += other;
+			y += other;
+			z += other;
+			return *this;
+		}
+
+		Vector3<T> operator-=(const Vector3<T>& other) {
+			x -= other.x;
+			y -= other.y;
+			z -= other.z;
+			return *this;
+		}
+
+		Vector3<T> operator-=(const T& other) {
+			x -= other;
+			y -= other;
+			z -= other;
+			return *this;
+		}
+
+		Vector3<T> operator*=(const Vector3<T>& other) {
+			x *= other.x;
+			y *= other.y;
+			z *= other.z;
+			return *this;
+		}
+
+		Vector3<T> operator*=(const T& other) {
+			x *= other;
+			y *= other;
+			z *= other;
+			return *this;
+		}
+
+		Vector3<T> operator/=(const Vector3<T>& other) {
+			x /= other.x;
+			y /= other.y;
+			z /= other.z;
+			return *this;
+		}
+
+		Vector3<T> operator/=(const T& other) {
+			x /= other;
+			y /= other;
+			z /= other;
+			return *this;
+		}
+
 		friend Vector3<T> operator/(const T& a, const Vector3<T>& b) {
 			return Vector3<T>(a / b.x, a / b.y, a / b.z);
 		}
@@ -238,6 +349,12 @@ namespace flo {
 	template<typename T>
 	T length(const Vector3<T>& x) {
 		return std::sqrt(dot(x, x));
+	}
+
+	template<typename T>
+	std::ostream& operator<<(std::ostream& stream, const Vector3<T>& v) {
+		stream << '[' << v.x << ", " << v.y << ", " << v.z << ']';
+		return stream;
 	}
 
 	typedef Vector2<double> vec2;
