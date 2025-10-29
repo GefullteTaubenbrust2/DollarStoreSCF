@@ -17,6 +17,8 @@ namespace flo {
 		Atom(const vec3& position, Element element, double mass);
 
 		Atom(const vec3& position, Element element);
+
+		vec3 getRepulsionGradient(const vec3& position);
 	};
 
 	struct Molecule {

@@ -14,4 +14,8 @@ namespace scf {
 	};
 
 	void solveMOs();
+
+	void computeCoulombTerms(Spin spin);
+
+	void computeExchangeTerms(Spin spin);
 }

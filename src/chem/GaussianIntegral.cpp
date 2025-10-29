@@ -1,4 +1,5 @@
 #include "GaussianIntegral.hpp"
+#include "../util/Pointer.hpp"
 
 #include <iostream>
 #include <cmath>
@@ -6,7 +7,14 @@
 namespace flo {
 	const double precision = 0.000000001;
 
-	std::vector<double> float_buffer[7];
+	Array<double> float_buffer[7];
+
+	template<typename T>
+	void swap(T& a, T& b) {
+		T x = a;
+		a = b;
+		b = x;
+	}
 
 	// We use the Obara-Saika scheme [1] to compute relevant GTO integrals.
 	// There may be better ways of doing this, especially since my implementation is probably less than optimal.
@@ -20,9 +28,7 @@ namespace flo {
 
 	double OSOverlap(double S00, double eta, double A, double B, double P, uint i, uint j) {
 		if (j > i) {
-			double X = A;
-			A = B;
-			B = X;
+			swap(A, B);
 		}
 		uint ij = max((int)i - (int)j, (int)j - (int)i);
 		double current = S00;
@@ -33,7 +39,7 @@ namespace flo {
 			current = next;
 		}
 		if (!min(i, j)) return current;
-		std::vector<double>& S = float_buffer[0];
+		Array<double>& S = float_buffer[0];
 		uint s = min(i, j) + 1;
 		S.resize(s * 3);
 		S[0] = current;
@@ -92,17 +98,9 @@ namespace flo {
 	vec2 OSKineticEnergy(double S00, double alpha, double beta, double A, double B, double P, uint i, uint j) {
 		double eta = alpha + beta;
 		if (j > i) {
-			double X = A;
-			A = B;
-			B = X;
-
-			X = alpha;
-			alpha = beta;
-			beta = X;
-
-			uint k = i;
-			i = j;
-			j = k;
+			swap(A, B);
+			swap(alpha, beta);
+			swap(i, j);
 		}
 		uint ij = i - j;
 		double current = S00;
@@ -112,7 +110,7 @@ namespace flo {
 			previous = current;
 			current = next;
 		}
-		std::vector<double>& S = float_buffer[0];
+		Array<double>& S = float_buffer[0];
 
 		int index_offset = (int)ij - 2;
 		int j_deficit = -index_offset;
@@ -224,14 +222,10 @@ namespace flo {
 		}
 	}
 	
-	void OSNuclearPotential(std::vector<double>& buffer, double eta, double A, double B, double C, double P, uint i, uint j, uint N) {
+	void OSNuclearPotential(Array<double>& buffer, double eta, double A, double B, double C, double P, uint i, uint j, uint N) {
 		if (j > i) {
-			double X = A;
-			A = B;
-			B = X;
-			uint x = i;
-			i = j;
-			j = x;
+			swap(A, B);
+			swap(i, j);
 		}
 
 		uint ij = i - j;
@@ -242,7 +236,7 @@ namespace flo {
 		float_buffer[1].resize(sj * sN);
 		float_buffer[2].resize(sj * sN);
 
-		std::vector<double>* previous = &float_buffer[0], *current = &float_buffer[1], *next = &float_buffer[2];
+		Array<double>* previous = &float_buffer[0], *current = &float_buffer[1], *next = &float_buffer[2];
 		for (int M = 0; M < sN; ++M) {
 			(*current)[M] = buffer[M];
 		}
@@ -250,7 +244,7 @@ namespace flo {
 			for (int M = sN - k - 2; M >= 0; --M) {
 				(*next)[M] = (P - A) * (*current)[M] + 0.5 / eta * k * (*previous)[M] - (P - C) * (*current)[M + 1] - 0.5 / eta * k * (*previous)[M + 1];
 			}
-			std::vector<double>* temp = previous;
+			Array<double>* temp = previous;
 			previous = current;
 			current = next;
 			next = temp;
@@ -273,7 +267,7 @@ namespace flo {
 						- (P - C) * (*current)[k * sN + M + 1] - 0.5 / eta * (k + ij) * (*current)[(k - 1) * sN + M + 1];
 				}
 			}
-			std::vector<double>* temp = previous;
+			Array<double>* temp = previous;
 			previous = current;
 			current = next;
 			next = temp;
@@ -285,7 +279,7 @@ namespace flo {
 							- (P - C) * (*current)[k * sN + M + 1] - 0.5 / eta * ((k + ij) * (*current)[(k - 1) * sN + M + 1] + l * (*previous)[k * sN + M + 1]);
 					}
 				}
-				std::vector<double>* temp = previous;
+				Array<double>* temp = previous;
 				previous = current;
 				current = next;
 				next = temp;
@@ -309,7 +303,7 @@ namespace flo {
 				uint N2 = N1 + exponents_mu[1] + exponents_nu[1];
 				uint N3 = N2 + exponents_mu[0] + exponents_nu[0];
 
-				std::vector<double>& buffer = float_buffer[3];
+				Array<double>& buffer = float_buffer[3];
 				buffer.resize(N3 + 1);
 
 				double angular_weight = chi_mu.spherical_harmonic[k].weight * chi_nu.spherical_harmonic[l].weight;
@@ -337,47 +331,22 @@ namespace flo {
 		return integral;
 	}
 
-	void OSRepulsion(std::vector<double>& buffer, double A, double B, double C, double D, double P, double Q, double eta, double zeta, int it, int jt, int kt, int lt, int Nt) {
+	void OSRepulsion(Array<double>& buffer, double A, double B, double C, double D, double P, double Q, double eta, double zeta, int it, int jt, int kt, int lt, int Nt) {
 		if (jt > it) {
-			double X = A;
-			A = B;
-			B = X;
-			uint x = it;
-			it = jt;
-			jt = x;
+			swap(A, B);
+			swap(it, jt);
 		}
 		if (lt > kt) {
-			double X = C;
-			C = D;
-			D = X;
-			uint x = kt;
-			kt = lt;
-			lt = x;
+			swap(C, D);
+			swap(kt, lt);
 		}
 		if (lt > jt) {
-			double X = A;
-			A = C;
-			C = X;
-
-			X = B;
-			B = D;
-			D = X;
-
-			X = eta;
-			eta = zeta;
-			zeta = X;
-
-			X = P;
-			P = Q;
-			Q = X;
-
-			uint x = it;
-			it = kt;
-			kt = x;
-
-			x = jt;
-			jt = lt;
-			lt = x;
+			swap(A, C);
+			swap(B, D);
+			swap(eta, zeta);
+			swap(P, Q);
+			swap(it, kt);
+			swap(jt, lt);
 		}
 		double omega = eta * zeta / (eta + zeta);
 
@@ -395,7 +364,7 @@ namespace flo {
 		float_buffer[0].resize(size_total);
 		float_buffer[1].resize(size_total);
 		float_buffer[2].resize(size_total);
-		std::vector<double>* previous = &float_buffer[0], *current = &float_buffer[1], *next = &float_buffer[2];
+		Array<double>* previous = &float_buffer[0], *current = &float_buffer[1], *next = &float_buffer[2];
 
 		for (int N = 0; N < sN; ++N) {
 			(*current)[N] = buffer[N];
@@ -554,7 +523,7 @@ namespace flo {
 					}
 				}
 			}
-			std::vector<double>* temp = next;
+			Array<double>* temp = next;
 			next = previous;
 			previous = current;
 			current = temp;
@@ -578,7 +547,7 @@ namespace flo {
 					}
 				}
 			}
-			std::vector<double>* temp = next;
+			Array<double>* temp = next;
 			next = previous;
 			previous = current;
 			current = temp;
@@ -678,17 +647,9 @@ namespace flo {
 		double eta = alpha + beta;
 		double gradient_sign = 1.0;
 		if (j > i) {
-			double X = A;
-			A = B;
-			B = X;
-
-			double x = alpha;
-			alpha = beta;
-			beta = x;
-
-			uint k = i;
-			i = j;
-			j = k;
+			swap(A, B);
+			swap(alpha, beta);
+			swap(i, j);
 
 			gradient_sign = -1.0;
 		}
@@ -700,7 +661,7 @@ namespace flo {
 			previous = current;
 			current = next;
 		}
-		std::vector<double>& S = float_buffer[0];
+		Array<double>& S = float_buffer[0];
 
 		int index_offset = (int)ij - 1;
 		int j_deficit = -index_offset;
@@ -788,17 +749,9 @@ namespace flo {
 		double eta = alpha + beta;
 		double gradient_sign = 1.0;
 		if (j > i) {
-			double X = A;
-			A = B;
-			B = X;
-
-			double x = alpha;
-			alpha = beta;
-			beta = x;
-
-			uint k = i;
-			i = j;
-			j = k;
+			swap(A, B);
+			swap(alpha, beta);
+			swap(i, j);
 
 			gradient_sign = -1.0;
 		}
@@ -810,7 +763,7 @@ namespace flo {
 			previous = current;
 			current = next;
 		}
-		std::vector<double>& S = float_buffer[0];
+		Array<double>& S = float_buffer[0];
 
 		int index_offset = (int)ij - 3;
 		int j_deficit = -index_offset;
@@ -909,31 +862,23 @@ namespace flo {
 		return integral;
 	}
 
-	vec2 OSNuclearGradient(std::vector<double>& buffer, double alpha, double beta, double A, double B, double C, double P, uint i, uint j) {
+	vec2 OSNuclearGradient(Array<double>& buffer, double alpha, double beta, double A, double B, double C, double P, uint i, uint j) {
 		double eta = alpha + beta;
 
-		bool swap = false;
+		bool swapped = false;
 		if (j > i) {
-			double X = A;
-			A = B;
-			B = X;
+			swap(A, B);
+			swap(alpha, beta);
+			swap(i, j);
 
-			X = alpha;
-			alpha = beta;
-			beta = X;
-
-			uint x = i;
-			i = j;
-			j = x;
-
-			swap = true;
+			swapped = true;
 		}
 
 		uint ij = i - j;
 		uint sj = j + 2;
 		uint sN = i + j + 2;
 
-		int index_offset = max(0, (int)ij);
+		int index_offset = ij;
 
 		float_buffer[0].resize(sj * sN);
 		float_buffer[1].resize(sj * sN);
@@ -941,7 +886,7 @@ namespace flo {
 
 		double V01 = 0.0, V21 = 0.0, V10 = 0.0, V12 = 0.0;
 
-		std::vector<double>* previous = &float_buffer[0], * current = &float_buffer[1], * next = &float_buffer[2];
+		Array<double>* previous = &float_buffer[0], * current = &float_buffer[1], * next = &float_buffer[2];
 		for (int M = 0; M < sN; ++M) {
 			(*current)[M] = buffer[M];
 		}
@@ -950,7 +895,7 @@ namespace flo {
 			for (int M = sN - k - 2; M >= 0; --M) {
 				(*next)[M] = (P - A) * (*current)[M] + 0.5 / eta * k * (*previous)[M] - (P - C) * (*current)[M + 1] - 0.5 / eta * k * (*previous)[M + 1];
 			}
-			std::vector<double>* temp = previous;
+			Array<double>* temp = previous;
 			previous = current;
 			current = next;
 			next = temp;
@@ -996,7 +941,7 @@ namespace flo {
 				  (P - B) * (*current)[(sj - 1) * sN + M]     + 0.5 / eta * (i + 1) * (*current)[(sj - 2) * sN + M]
 				- (P - C) * (*current)[(sj - 1) * sN + M + 1] - 0.5 / eta * (i + 1) * (*current)[(sj - 2) * sN + M + 1];
 		}
-		std::vector<double>* temp = previous;
+		Array<double>* temp = previous;
 		previous = current;
 		current = next;
 		next = temp;
@@ -1021,7 +966,7 @@ namespace flo {
 						- (P - C) * (*current)[(sj - 1) * sN + M + 1] - 0.5 / eta * ((i + 1) * (*current)[(sj - 2) * sN + M + 1] + l * (*previous)[(sj - 1) * sN + M + 1]);
 				}
 			}
-			std::vector<double>* temp = previous;
+			Array<double>* temp = previous;
 			previous = current;
 			current = next;
 			next = temp;
@@ -1040,7 +985,7 @@ namespace flo {
 		double Di = 2.0 * alpha * V21 - i * V01;
 		double Dj = 2.0 * beta * V12 - j * V10;
 
-		if (swap) return vec2(Dj, Di);
+		if (swapped) return vec2(Dj, Di);
 		return vec2(Di, Dj);
 	}
 
@@ -1060,9 +1005,9 @@ namespace flo {
 
 				uint N_total = Nx + Ny + Nz;
 
-				std::vector<double>& dx_buffer = float_buffer[3];
-				std::vector<double>& dy_buffer = float_buffer[4];
-				std::vector<double>& dz_buffer = float_buffer[5];
+				Array<double>& dx_buffer = float_buffer[3];
+				Array<double>& dy_buffer = float_buffer[4];
+				Array<double>& dz_buffer = float_buffer[5];
 				dx_buffer.resize(N_total + 2);
 				dy_buffer.resize(N_total + 2);
 				dz_buffer.resize(N_total + 2);
@@ -1104,9 +1049,314 @@ namespace flo {
 		return std::array<vec3, 2>{left_integral, right_integral};
 	}
 
-	// I'll do this later, I'm tired boss
-	std::array<double, 4> OSrepulsionGradient(std::vector<double>& buffer, double A, double B, double C, double D, double P, double Q, double alpha, double beta, double gamma, double delta, int it, int jt, int kt, int lt) {
-		return std::array<double, 4>{0.0, 0.0, 0.0, 0.0};
+	std::array<double, 4> OSrepulsionGradient(Array<double>& buffer, double A, double B, double C, double D, double P, double Q, double alpha, double beta, double gamma, double delta, int it, int jt, int kt, int lt) {
+		int result_permutation[4] = { 0, 1, 2, 3 };
+
+		if (jt > it) {
+			swap(A, B);
+			swap(alpha, beta);
+			swap(it, jt);
+			swap(result_permutation[0], result_permutation[1]);
+		}
+		if (lt > kt) {
+			swap(C, D);
+			swap(gamma, delta);
+			swap(kt, lt);
+			swap(result_permutation[2], result_permutation[3]);
+		}
+		if (lt > jt) {
+			swap(A, C);
+			swap(B, D);
+			swap(alpha, gamma);
+			swap(beta, delta);
+			swap(it, kt);
+			swap(jt, lt);
+			swap(result_permutation[0], result_permutation[2]);
+			swap(result_permutation[1], result_permutation[3]);
+			swap(P, Q);
+		}
+		double eta = alpha + beta;
+		double zeta = gamma + delta;
+
+		double omega = eta * zeta / (eta + zeta);
+
+		uint si = it + 2;
+		uint sj = jt + 2;
+		uint sk = kt + 2;
+		uint sl = lt + 2;
+		uint sN = it + jt + kt + lt + 2;
+
+		uint oi = sN;
+		uint oj = oi * si;
+		uint ok = oj * sj;
+		uint size_total = ok * sk;
+
+		float_buffer[0].resize(size_total);
+		float_buffer[1].resize(size_total);
+		float_buffer[2].resize(size_total);
+		Array<double>* previous = &float_buffer[0], * current = &float_buffer[1], * next = &float_buffer[2];
+
+		double results[8] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+		
+		for (int N = 0; N < sN; ++N) {
+			(*current)[N] = buffer[N];
+		}
+		// Increase i
+		for (int N = sN - 2; N >= 0; --N) {
+			(*current)[sN + N] = (P - A) * (*current)[N] - omega / eta * (P - Q) * (*current)[N + 1];
+		}
+		for (int i = 1; i <= it; ++i) {
+			for (int N = sN - i - 2; N >= 0; --N) {
+				(*current)[(i + 1) * sN + N] =
+					(P - A) * (*current)[i * sN + N] - omega / eta * (P - Q) * (*current)[i * sN + N + 1]
+					+ 0.5 * i / eta * ((*current)[(i - 1) * sN + N] - omega / eta * (*current)[(i - 1) * sN + N + 1]);
+			}
+		}
+
+		// Increase j
+		int i_start = max(0, it - jt - kt - lt);
+
+		if (!i_start) {
+			for (int N = sN - it - 2; N >= 0; --N) {
+				(*current)[oj + N] = (P - B) * (*current)[N] - omega / eta * (P - Q) * (*current)[N + 1];
+			}
+		}
+		for (int i = max(1, i_start); i < si; ++i) {
+			for (int N = sN - it - 2; N >= 0; --N) {
+				(*current)[(si + i) * sN + N] =
+					(P - B) * (*current)[i * sN + N] - omega / eta * (P - Q) * (*current)[i * sN + N + 1]
+					+ 0.5 * i / eta * ((*current)[(i - 1) * sN + N] - omega / eta * (*current)[(i - 1) * sN + N + 1]);
+			}
+		}
+		for (int j = 1; j <= jt; ++j) {
+			i_start = max(0, it - jt - kt - lt + j);
+
+			if (!i_start) {
+				for (int N = sN - it - j - 2; N >= 0; --N) {
+					(*current)[((j + 1) * si) * sN + N] =
+						(P - B) * (*current)[j * si * sN + N] - omega / eta * (P - Q) * (*current)[j * si * sN + N + 1]
+						+ 0.5 * j / eta * ((*current)[((j - 1) * si) * sN + N] - omega / eta * (*current)[((j - 1) * si) * sN + N + 1]);
+				}
+			}
+			for (int i = max(1, i_start); i < si; ++i) {
+				for (int N = sN - it - j - 2; N >= 0; --N) {
+					(*current)[((j + 1) * si + i) * sN + N] =
+						(P - B) * (*current)[(j * si + i) * sN + N] - omega / eta * (P - Q) * (*current)[(j * si + i) * sN + N + 1]
+						+ 0.5 * i / eta * ((*current)[(j * si + i - 1) * sN + N] - omega / eta * (*current)[(j * si + i - 1) * sN + N + 1])
+						+ 0.5 * j / eta * ((*current)[((j - 1) * si + i) * sN + N] - omega / eta * (*current)[((j - 1) * si + i) * sN + N + 1]);
+				}
+			}
+		}
+
+		// Increase k
+		int j_start = max(0, jt - kt - lt);
+		i_start = max(0, it - kt - lt + jt - 1);
+
+		if (!j_start) {
+			if (!i_start) {
+				for (int N = sN - it - jt - 2; N >= 0; --N) {
+					(*current)[ok + N] = (Q - C) * (*current)[N] - omega / zeta * (Q - P) * (*current)[N + 1];
+				}
+			}
+			for (int i = max(1, i_start); i < si; ++i) {
+				for (int N = sN - it - jt - 2; N >= 0; --N) {
+					int index = i * oi + N;
+					(*current)[index + ok] =
+						(Q - C) * (*current)[index] - omega / zeta * (Q - P) * (*current)[index + 1]
+						+ 0.5 * i / (eta + zeta) * ((*current)[index - oi + 1]);
+				}
+			}
+		}
+		for (int j = 1; j < sj; ++j) {
+			i_start = max(0, it - kt - lt + jt - j - 1);
+
+			if (!i_start) {
+				for (int N = sN - it - jt - 2; N >= 0; --N) {
+					int index = j * oj + N;
+					(*current)[index + ok] =
+						(Q - C) * (*current)[index] - omega / zeta * (Q - P) * (*current)[index + 1]
+						+ 0.5 * j / (eta + zeta) * ((*current)[index - oj + 1]);
+				}
+			}
+			for (int i = max(1, i_start); i < si; ++i) {
+				for (int N = sN - it - jt - 2; N >= 0; --N) {
+					int index = j * oj + i * oi + N;
+					(*current)[index + ok] =
+						(Q - C) * (*current)[index] - omega / zeta * (Q - P) * (*current)[index + 1]
+						+ 0.5 * i / (eta + zeta) * ((*current)[index - oi + 1])
+						+ 0.5 * j / (eta + zeta) * ((*current)[index - oj + 1]);
+				}
+			}
+		}
+		for (int k = 1; k <= kt; ++k) {
+			j_start = max(0, jt - kt - lt + k);
+			i_start = max(0, it - kt - lt + k);
+
+			if (!j_start) {
+				for (int N = sN - it - jt - k - 2; N >= 0; --N) {
+					int index = k * ok + N;
+					(*current)[index + ok] =
+						(Q - C) * (*current)[index] - omega / zeta * (Q - P) * (*current)[index + 1]
+						+ 0.5 * k / zeta * ((*current)[index - ok] - omega / zeta * (*current)[index - ok + 1]);
+				}
+				for (int i = max(1, i_start); i < si; ++i) {
+					for (int N = sN - it - jt - k - 2; N >= 0; --N) {
+						int index = k * ok + i * oi + N;
+						(*current)[index + ok] =
+							(Q - C) * (*current)[index] - omega / zeta * (Q - P) * (*current)[index + 1]
+							+ 0.5 * k / zeta * ((*current)[index - ok] - omega / zeta * (*current)[index - ok + 1])
+							+ 0.5 * i / (eta + zeta) * (*current)[index - oi + 1];
+					}
+				}
+			}
+			for (int j = 1; j < sj; ++j) {
+				i_start = max(0, it - kt - lt + jt + k - j - 1);
+
+				if (!i_start) {
+					for (int N = sN - it - jt - k - 2; N >= 0; --N) {
+						int index = k * ok + j * oj + N;
+						(*current)[index + ok] =
+							(Q - C) * (*current)[index] - omega / zeta * (Q - P) * (*current)[index + 1]
+							+ 0.5 * k / zeta * ((*current)[index - ok] - omega / zeta * (*current)[index - ok + 1])
+							+ 0.5 * j / (eta + zeta) * (*current)[index - oj + 1];
+					}
+				}
+				for (int i = max(1, i_start); i < si; ++i) {
+					for (int N = sN - it - jt - k - 2; N >= 0; --N) {
+						int index = k * ok + j * oj + i * oi + N;
+						(*current)[index + ok] =
+							(Q - C) * (*current)[index] - omega / zeta * (Q - P) * (*current)[index + 1]
+							+ 0.5 * k / zeta * ((*current)[index - ok] - omega / zeta * (*current)[index - ok + 1])
+							+ 0.5 * i / (eta + zeta) * (*current)[index - oi + 1]
+							+ 0.5 * j / (eta + zeta) * (*current)[index - oj + 1];
+					}
+				}
+			}
+		}
+
+		// Increase l
+		if (lt) {
+			if (lt == it) {
+				for (int N = sN - it - jt - kt - 2; N >= 0; --N) {
+					int index = kt * ok + jt * oj + N;
+					(*next)[index] =
+						(Q - D) * (*current)[index] - omega / zeta * (Q - P) * (*current)[index + 1]
+						+ 0.5 * kt / zeta * ((*current)[index - ok] - omega / zeta * (*current)[index - ok + 1])
+						+ 0.5 * jt / (eta + zeta) * (*current)[index - oj + 1];
+				}
+			}
+			if (lt == jt) {
+				for (int N = sN - it - jt - kt - 2; N >= 0; --N) {
+					int index = kt * ok + it * oi + N;
+					(*next)[index] =
+						(Q - D) * (*current)[index] - omega / zeta * (Q - P) * (*current)[index + 1]
+						+ 0.5 * kt / zeta * ((*current)[index - ok] - omega / zeta * (*current)[index - ok + 1])
+						+ 0.5 * it / (eta + zeta) * (*current)[index - oi + 1];
+				}
+			}
+			if (lt == kt) {
+				for (int N = sN - it - jt - kt - 2; N >= 0; --N) {
+					int index = jt * oj + it * oi + N;
+					(*next)[index] =
+						(Q - D) * (*current)[index] - omega / zeta * (Q - P) * (*current)[index + 1]
+						+ 0.5 * it / (eta + zeta) * (*current)[index - oi + 1]
+						+ 0.5 * jt / (eta + zeta) * (*current)[index - oj + 1];
+				}
+			}
+			for (int ki = 0; ki <= lt + 1; ++ki) {
+				int k = ki + kt - lt;
+				if (k <= 0) continue;
+				for (int ji = lt - ki - 1; ji <= lt + 1; ++ji) {
+					int j = ji + jt - lt;
+					if (j <= 0) continue;
+					for (int ii = lt - ji - 1; ii <= lt + 1; ++ii) {
+						int i = ii + it - lt;
+						if (i <= 0) continue;
+						for (int N = sN - it - jt - kt - 2; N >= 0; --N) {
+							int index = k * ok + j * oj + i * oi + N;
+							(*next)[index] =
+								(Q - D) * (*current)[index] - omega / zeta * (Q - P) * (*current)[index + 1]
+								+ 0.5 * k / zeta * ((*current)[index - ok] - omega / zeta * (*current)[index - ok + 1])
+								+ 0.5 * i / (eta + zeta) * (*current)[index - oi + 1]
+								+ 0.5 * j / (eta + zeta) * (*current)[index - oj + 1];
+						}
+					}
+				}
+			}
+			Array<double>* temp = next;
+			next = previous;
+			previous = current;
+			current = temp;
+		}
+
+		for (int l = 1; l < lt; ++l) {
+			for (int ki = l - 1; ki <= lt + 1; ++ki) {
+				int k = ki + kt - lt;
+				if (k <= 0) continue;
+				for (int ji = lt - ki - 1; ji <= lt + 1; ++ji) {
+					int j = ji + jt - lt;
+					if (j <= 0) continue;
+					for (int ii = lt - ji - 1; ii <= lt + 1; ++ii) {
+						int i = ii + it - lt;
+						if (i <= 0) continue;
+						for (int N = sN - it - jt - kt - l - 2; N >= 0; --N) {
+							int index = k * ok + j * oj + i * oi + N;
+							(*next)[index] =
+								(Q - D) * (*current)[index] - omega / zeta * (Q - P) * (*current)[index + 1]
+								+ 0.5 * k / zeta * ((*current)[index - ok] - omega / zeta * (*current)[index - ok + 1])
+								+ 0.5 * l / zeta * ((*previous)[index] - omega / zeta * (*previous)[index + 1])
+								+ 0.5 * i / (eta + zeta) * (*current)[index - oi + 1]
+								+ 0.5 * j / (eta + zeta) * (*current)[index - oj + 1];
+						}
+					}
+				}
+			}
+			Array<double>* temp = next;
+			next = previous;
+			previous = current;
+			current = temp;
+		}
+		int index = it * oi + jt * oj + kt * ok;
+
+		results[1] = (*current)[index + oi];
+		results[3] = (*current)[index + oj];
+		results[5] = (*current)[index + ok];
+
+		results[7] = (Q - D) * (*current)[index] - omega / zeta * (Q - P) * (*current)[index + 1];
+		if (it) results[7] += 0.5 * it / (eta + zeta) * (*current)[index - oi + 1];
+		if (jt) results[7] += 0.5 * jt / (eta + zeta) * (*current)[index - oj + 1];
+		if (kt) results[7] += 0.5 * kt / zeta * ((*current)[index - ok] - omega / zeta * (*current)[index - ok + 1]);
+		if (lt) results[7] += 0.5 * lt / zeta * ((*previous)[index] - omega / zeta * (*previous)[index + 1]);
+
+		//std::cout << "Grad " << results[7] << '\n';
+		//std::cout << "Grad " << (*current)[index] << '\n';
+
+		if (it) results[0] = (*current)[index - oi];
+		if (jt) results[2] = (*current)[index - oj];
+		if (kt) results[4] = (*current)[index - ok];
+
+		if (lt) {
+			results[6] = (*previous)[it * oi + jt * oj + kt * ok];
+		}
+
+		std::array<double, 4> return_value;
+
+		return_value[result_permutation[0]] = 2.0 * alpha * results[1] - it * results[0];
+		return_value[result_permutation[1]] = 2.0 * beta  * results[3] - jt * results[2];
+		return_value[result_permutation[2]] = 2.0 * gamma * results[5] - kt * results[4];
+		return_value[result_permutation[3]] = 2.0 * delta * results[7] - lt * results[6];
+
+		/*return_value[0] = 2.0 * alpha * results[1] - it * results[0];
+		return_value[1] = 2.0 * beta * results[3] - jt * results[2];
+		return_value[2] = 2.0 * gamma * results[5] - kt * results[4];
+		return_value[3] = 2.0 * delta * results[7] - lt * results[6];*/
+
+		/*return_value[0] = 2.0 * alpha * results[result_permutation[0] * 2 + 1] - it * results[result_permutation[0] * 2];
+		return_value[1] = 2.0 * beta * results[result_permutation[1] * 2 + 1] - jt * results[result_permutation[1] * 2];
+		return_value[2] = 2.0 * gamma * results[result_permutation[2] * 2 + 1] - kt * results[result_permutation[2] * 2];
+		return_value[3] = 2.0 * delta * results[result_permutation[3] * 2 + 1] - lt * results[result_permutation[3] * 2];*/
+
+		return return_value;
 	}
 
 	std::array<vec3, 4> electronRepulsionGradient(const ContractedGaussian& chi_mu, const ContractedGaussian& chi_sigma, const ContractedGaussian& chi_nu, const ContractedGaussian& chi_tau) {
@@ -1121,10 +1371,10 @@ namespace flo {
 
 		uint N_total = chi_mu.l + chi_nu.l + chi_sigma.l + chi_tau.l;
 
-		std::vector<double>& base_buffer = float_buffer[3];
-		std::vector<double>& dx_buffer   = float_buffer[4];
-		std::vector<double>& dy_buffer   = float_buffer[5];
-		std::vector<double>& dz_buffer   = float_buffer[6];
+		Array<double>& base_buffer = float_buffer[3];
+		Array<double>& dx_buffer   = float_buffer[4];
+		Array<double>& dy_buffer   = float_buffer[5];
+		Array<double>& dz_buffer   = float_buffer[6];
 		base_buffer.resize(N_total + 2);
 		dx_buffer.resize(N_total + 2);
 		dy_buffer.resize(N_total + 2);
@@ -1194,16 +1444,20 @@ namespace flo {
 
 										double gross_factor = normalization_factor * gaussian_factor * primitive_factor * angular_weight;
 
-										OSRepulsion(dx_buffer, A.y, B.y, C.y, D.y, P.y, Q.y, eta, zeta, exp_mu[1], exp_nu[1], exp_sigma[1], exp_tau[1], Nz + Nx);
-										OSRepulsion(dx_buffer, A.z, B.z, C.z, D.z, P.z, Q.z, eta, zeta, exp_mu[2], exp_nu[2], exp_sigma[2], exp_tau[2], Nx);
+										OSRepulsion(dx_buffer, A.y, B.y, C.y, D.y, P.y, Q.y, eta, zeta, exp_mu[1], exp_nu[1], exp_sigma[1], exp_tau[1], Nz + Nx + 1);
+										OSRepulsion(dx_buffer, A.z, B.z, C.z, D.z, P.z, Q.z, eta, zeta, exp_mu[2], exp_nu[2], exp_sigma[2], exp_tau[2], Nx + 1);
 										auto Dx = OSrepulsionGradient(dx_buffer, A.x, B.x, C.x, D.x, P.x, Q.x, alpha, beta, gamma, delta, exp_mu[0], exp_nu[0], exp_sigma[0], exp_tau[0]);
+										//OSRepulsion(dx_buffer, A.x, B.x, C.x, D.x, P.x, Q.x, eta, zeta, exp_mu[0], exp_nu[0], exp_sigma[0] + 1, exp_tau[0], 0);
+										//std::cout << "Valu " << dx_buffer[0] << '\n';
+										//OSRepulsion(dx_buffer, A.x, B.x, C.x, D.x, P.x, Q.x, eta, zeta, 1, 0, 0, 0, 0);
+										//std::cout << gross_factor * 2.0 * alpha * dx_buffer[0] << '\n';
 
-										OSRepulsion(dz_buffer, A.z, B.z, C.z, D.z, P.z, Q.z, eta, zeta, exp_mu[2], exp_nu[2], exp_sigma[2], exp_tau[2], Nx + Ny);
-										OSRepulsion(dz_buffer, A.x, B.x, C.x, D.x, P.x, Q.x, eta, zeta, exp_mu[0], exp_nu[0], exp_sigma[0], exp_tau[0], Ny);
+										OSRepulsion(dz_buffer, A.z, B.z, C.z, D.z, P.z, Q.z, eta, zeta, exp_mu[2], exp_nu[2], exp_sigma[2], exp_tau[2], Nx + Ny + 1);
+										OSRepulsion(dz_buffer, A.x, B.x, C.x, D.x, P.x, Q.x, eta, zeta, exp_mu[0], exp_nu[0], exp_sigma[0], exp_tau[0], Ny + 1);
 										auto Dy = OSrepulsionGradient(dz_buffer, A.y, B.y, C.y, D.y, P.y, Q.y, alpha, beta, gamma, delta, exp_mu[1], exp_nu[1], exp_sigma[1], exp_tau[1]);
 
-										OSRepulsion(dz_buffer, A.x, B.x, C.x, D.x, P.x, Q.x, eta, zeta, exp_mu[0], exp_nu[0], exp_sigma[0], exp_tau[0], Ny + Nz);
-										OSRepulsion(dz_buffer, A.y, B.y, C.y, D.y, P.y, Q.y, eta, zeta, exp_mu[1], exp_nu[1], exp_sigma[1], exp_tau[1], Nz);
+										OSRepulsion(dz_buffer, A.x, B.x, C.x, D.x, P.x, Q.x, eta, zeta, exp_mu[0], exp_nu[0], exp_sigma[0], exp_tau[0], Ny + Nz + 1);
+										OSRepulsion(dz_buffer, A.y, B.y, C.y, D.y, P.y, Q.y, eta, zeta, exp_mu[1], exp_nu[1], exp_sigma[1], exp_tau[1], Nz + 1);
 										auto Dz = OSrepulsionGradient(dz_buffer, A.z, B.z, C.z, D.z, P.z, Q.z, alpha, beta, gamma, delta, exp_mu[2], exp_nu[2], exp_sigma[2], exp_tau[2]);
 
 										mu_integral    += gross_factor * vec3(Dx[0], Dy[0], Dz[0]);

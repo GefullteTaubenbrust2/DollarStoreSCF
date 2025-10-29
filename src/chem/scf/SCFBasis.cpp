@@ -4,6 +4,7 @@
 #include "../../lalib/LalibDeclarations.hpp"
 #include "../../lalib/Lapack.hpp"
 #include "SCFCommon.hpp"
+#include "ExactCoulomb.hpp"
 
 #define MATRIX_BUFFER_SIZE 5
 
@@ -17,13 +18,9 @@ namespace scf {
 		molecule = _molecule;
 		atom_bases.resize(molecule.size());
 		uint total_electron_count = 0;
-		nuclear_energy = 0.0;
 		for (int i = 0; i < molecule.size(); ++i) {
 			atom_bases[i].clear();
 			total_electron_count += (uint)molecule[i].element;
-			for (int j = i + 1; j < molecule.size(); ++j) {
-				nuclear_energy += (int)molecule[i].element * (int)molecule[j].element / length(molecule[i].position - molecule[j].position);
-			}
 		}
 		total_electron_count -= charge;
 		if (total_electron_count % 2 == multiplicity % 2) {
@@ -100,6 +97,13 @@ namespace scf {
 	//int d_permutations[5] = { 0, -1, 1, -2, 2 };
 
 	void constructBasis() {
+		nuclear_energy = 0.0;
+		for (int i = 0; i < molecule.size(); ++i) {
+			for (int j = i + 1; j < molecule.size(); ++j) {
+				nuclear_energy += (int)molecule[i].element * (int)molecule[j].element / length(molecule[i].position - molecule[j].position);
+			}
+		}
+
 		basis.clear();
 		for (int i = 0; i < molecule.size(); ++i) {
 			AtomicBasis& definition = atom_bases[i];
@@ -146,5 +150,7 @@ namespace scf {
 		assignCoreHamiltonian();
 
 		assignOrthogonalization();
+
+		assignExactRepulsionTensor();
 	}
 }

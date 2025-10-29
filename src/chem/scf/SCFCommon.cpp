@@ -11,6 +11,9 @@ namespace scf {
 	flo::SymmetricMatrixNd kinetic_energy_matrix;
 	flo::SymmetricMatrixNd nuclear_attraction_matrix;
 	flo::SymmetricMatrixNd core_hamiltonian;
+	flo::SymmetricMatrixNd two_electron_hamiltonian[2];
+	flo::SymmetricMatrixNd fock_matrix[2];
+
 	flo::SymmetricMatrixNd overlap_matrix;
 	flo::SymmetricMatrixNd orthogonalization_matrix;
 	flo::SymmetricMatrixNd lowdin_matrix;
@@ -19,7 +22,6 @@ namespace scf {
 
 	flo::VectorNd mo_levels[2];
 	flo::MatrixNd coefficient_matrix[2];
-	flo::SymmetricMatrixNd fock_matrix[2];
 	flo::SymmetricMatrixNd density_matrix[2];
 	flo::SymmetricMatrixNd total_density_matrix;
 

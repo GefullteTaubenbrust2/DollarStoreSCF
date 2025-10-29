@@ -67,7 +67,7 @@ namespace flo {
 
 	template<typename T>
 	Vector<T>& Vector<T>::operator+=(const Vector<T>& b) {
-		if (size != b.size()) return *this;
+		if (size() != b.size()) return *this;
 		for (uint i = 0; i < size(); ++i) {
 			entries[i] += b[i];
 		}
@@ -76,7 +76,7 @@ namespace flo {
 
 	template<typename T>
 	Vector<T>& Vector<T>::operator-=(const Vector<T>& b) {
-		if (size != b.size()) return *this;
+		if (size() != b.size()) return *this;
 		for (uint i = 0; i < size(); ++i) {
 			entries[i] -= b[i];
 		}
@@ -108,6 +108,14 @@ namespace flo {
 	}
 
 	template<typename T>
+	Vector<T>& Vector<T>::operator/=(const T& b) {
+		for (uint i = 0; i < size(); ++i) {
+			entries[i] /= b;
+		}
+		return *this;
+	}
+
+	template<typename T>
 	intern::VectorSum<T> Vector<T>::operator+(const Vector<T>& other) const {
 		return intern::VectorSum<T>(*this, other);
 	}
@@ -133,6 +141,11 @@ namespace flo {
 	}
 
 	template<typename T>
+	intern::VectorScalarProduct<T> Vector<T>::operator/(const T& other) const {
+		return intern::VectorScalarProduct<T>(*this, 1.0 / other);
+	}
+
+	template<typename T>
 	intern::VectorScalarSum<T> operator+(const T& scalar, const Vector<T>& vector) {
 		return intern::VectorScalarSum<T>(vector, scalar);
 	}
@@ -148,6 +161,11 @@ namespace flo {
 	}
 
 	template<typename T>
+	intern::VectorScalarProduct<T> operator/(const T& scalar, const Vector<T>& vector) {
+		return intern::VectorScalarProduct<T>(vector, 1.0 / scalar);
+	}
+
+	template<typename T>
 	intern::MatrixVectorProduct<T> Vector<T>::operator*(const MatrixBase<T>& other) const {
 		return intern::MatrixVectorProduct<T>(other, *this, true);
 	}
@@ -159,12 +177,16 @@ namespace flo {
 
 	template<typename T>
 	T length2(const Vector<T>& x) {
-		return cc(x) * x;
+		T sum = (T)0.0;
+		for (int i = 0; i < x.size(); ++i) {
+			sum += cc(x[i]) * x[i];
+		}
+		return sum;
 	}
 
 	template<typename T>
 	T length(const Vector<T>& x) {
-		return std::sqrt(cc(x) * x);
+		return std::sqrt(length2(x));
 	}
 
 	template<typename T>

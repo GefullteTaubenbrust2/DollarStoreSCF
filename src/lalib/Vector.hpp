@@ -47,6 +47,8 @@ namespace flo {
 
 		Vector<T>& operator*=(const T& b);
 
+		Vector<T>& operator/=(const T& b);
+
 		intern::VectorSum<T> operator+(const Vector<T>& other) const;
 
 		intern::VectorDifference<T> operator-(const Vector<T>& other) const;
@@ -56,6 +58,8 @@ namespace flo {
 		intern::VectorScalarDifference<T> operator-(const T& other) const;
 
 		intern::VectorScalarProduct<T> operator*(const T& other) const;
+
+		intern::VectorScalarProduct<T> operator/(const T& other) const;
 
 		//friend intern::VectorScalarSum<T> operator+(const T& scalar, const Vector<T>& vector);
 

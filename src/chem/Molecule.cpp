@@ -10,6 +10,14 @@ namespace flo {
 	position(position), element(element), charge((uint)element), mass(common_atomic_masses[(int)element] * Da_to_me) {
 	}
 
+	vec3 Atom::getRepulsionGradient(const vec3& pos) {
+		vec3 x = pos - position;
+
+		double denominator = std::pow(length2(x), -1.5);
+
+		return -((double)charge)* x * denominator;
+	}
+
 	size_t Molecule::size() {
 		return atoms.size();
 	}
