@@ -169,6 +169,7 @@ namespace flo {
 	struct Array {
 	private:
 		T* ptr = nullptr;
+		bool has_ownership = false;
 		size_t length = 0, free = 0;
 
 	public:
@@ -176,11 +177,13 @@ namespace flo {
 
 		Array(size_t size) : length(size) {
 			ptr = new T[size];
+			has_ownership = true;
 		}
 
 		Array(const Array<T>& copy) {
 			if (copy.length) {
 				ptr = new T[copy.length];
+				has_ownership = true;
 				length = copy.length;
 				free = copy.length;
 				std::copy(copy.ptr, copy.ptr + length, ptr);
@@ -192,6 +195,14 @@ namespace flo {
 			for (int i = 0; i < init.size(); ++i) {
 				ptr[i] = init.begin()[i];
 			}
+		}
+
+		void reference(T* data, size_t size, size_t _free) {
+			if (has_ownership && ptr) delete[] ptr;
+			ptr = data;
+			length = size;
+			free = _free;
+			has_ownership = false;
 		}
 
 		void operator=(const Array<T>& right) {
@@ -238,10 +249,15 @@ namespace flo {
 			return length;
 		}
 
+		constexpr size_t capacity() const {
+			return free;
+		}
+
 		void resize(size_t new_size) {
 			if (new_size > free) {
-				if (ptr) delete[] ptr;
+				if (has_ownership && ptr) delete[] ptr;
 				ptr = new T[new_size];
+				has_ownership = true;
 				length = new_size;
 				free = new_size;
 			}
@@ -258,8 +274,9 @@ namespace flo {
 				free = length;
 				if (old_ptr) {
 					std::copy(old_ptr, old_ptr + length, ptr);
-					delete[] old_ptr;
+					if (has_ownership) delete[] old_ptr;
 				}
+				has_ownership = true;
 			}
 		}
 
@@ -273,8 +290,9 @@ namespace flo {
 		}
 
 		~Array() {
-			if (ptr) delete[] ptr;
+			if (ptr && has_ownership) delete[] ptr;
 			ptr = nullptr;
+			has_ownership = false;
 			length = 0;
 			free = 0;
 		}

@@ -42,6 +42,16 @@ namespace flo {
 	}
 
 	template<typename T>
+	intern::WeightedMatrixSum<T> MatrixBase<T>::operator+(const intern::MatrixScalarProduct<T>& other) const {
+		return intern::WeightedMatrixSum<T>(*this, 1.0, other.matrix, other.scalar);
+	}
+
+	template<typename T>
+	intern::WeightedMatrixSum<T> MatrixBase<T>::operator-(const intern::MatrixScalarProduct<T>& other) const {
+		return intern::WeightedMatrixSum<T>(*this, 1.0, other.matrix, -other.scalar);
+	}
+
+	template<typename T>
 	T* MatrixBase<T>::getRawData() const {
 		return data.getPtr();
 	}

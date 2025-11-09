@@ -201,6 +201,11 @@ namespace flo {
 	}
 
 	template<typename T>
+	Vector2<T> normalize(const Vector2<T>& x) {
+		return x / length(x);
+	}
+
+	template<typename T>
 	std::ostream& operator<<(std::ostream& stream, const Vector2<T>& v) {
 		stream << '[' << v.x << ", " << v.y << ']';
 		return stream;
@@ -349,6 +354,11 @@ namespace flo {
 	template<typename T>
 	T length(const Vector3<T>& x) {
 		return std::sqrt(dot(x, x));
+	}
+
+	template<typename T>
+	Vector3<T> normalize(const Vector3<T>& x) {
+		return x / length(x);
 	}
 
 	template<typename T>

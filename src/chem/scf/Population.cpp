@@ -4,7 +4,6 @@
 #include "../Molecule.hpp"
 #include "../../util/FormattedStream.hpp"
 
-#include <sstream>
 #include <functional>
 
 using namespace flo;
@@ -38,9 +37,7 @@ namespace scf {
 								skip = true;
 								break;
 							}
-							std::ostringstream oss;
-							oss << element_symbols[(int)molecule[atom_index].element - 1] << (atom_index + 1) << ' ' << getOrbitalName(li, mi);
-							labels.push_back(oss.str());
+							labels.push_back(molecule.getAtomName(atom_index) + getOrbitalName(li, mi));
 						}
 						if (skip) break;
 					}
@@ -113,9 +110,7 @@ namespace scf {
 			computeAtomicPopulations(alpha_values, alpha_populations);
 			computeAtomicPopulations(beta_values, beta_populations);
 			for (int i = 0; i < alpha_values.size(); ++i) {
-				std::ostringstream oss;
-				oss << element_symbols[(int)molecule[i].element - 1] << (i + 1);
-				fout << '|' << oss.str() << '|' << (alpha_values[i] + beta_values[i]) << '|' << (alpha_values[i] - beta_values[i]) << '|' << '\n';
+				fout << '|' << molecule.getAtomName(i) << '|' << (alpha_values[i] + beta_values[i]) << '|' << (alpha_values[i] - beta_values[i]) << '|' << '\n';
 			}
 			fout << '-' << ',' << '-' << ',' << '-' << '\n';
 			fout.resetRows();
@@ -150,9 +145,7 @@ namespace scf {
 
 			computeAtomicPopulations(alpha_values, alpha_populations);
 			for (int i = 0; i < alpha_values.size(); ++i) {
-				std::ostringstream oss;
-				oss << element_symbols[(int)molecule[i].element - 1] << (i + 1);
-				fout << '|' << oss.str() << '|' << alpha_values[i] << '|' << '\n';
+				fout << '|' << molecule.getAtomName(i) << '|' << alpha_values[i] << '|' << '\n';
 			}
 			fout << '-' << ',' << '-' << '\n';
 			fout.resetRows();
@@ -176,9 +169,7 @@ namespace scf {
 			for (int j = 0; j < i; ++j) {
 				double distance = length(molecule[i].position - molecule[j].position);
 				if (distance < 10.0) {
-					std::ostringstream oss;
-					oss << element_symbols[(int)molecule[j].element - 1] << (j + 1) << '-' << element_symbols[(int)molecule[i].element - 1] << (i + 1);
-					fout << '|' << oss.str() << '|' << calculateBondOrder(j, i) << '|' << '\n';
+					fout << '|' << (molecule.getAtomName(j) + '-' + molecule.getAtomName(i)) << '|' << calculateBondOrder(j, i) << '|' << '\n';
 				}
 			}
 		}
@@ -325,10 +316,7 @@ namespace scf {
 			double total_valence = 2.0 * gross_population - self_bonding;
 			double bonded_valence = total_valence - total_bond_order;
 			
-			std::ostringstream oss;
-			oss << element_symbols[(int)molecule[atom_a].element - 1] << (atom_a + 1);
-
-			fout << '|' << oss.str() << '|' << total_valence << '|' << bonded_valence << '|' << total_bond_order << '|' << '\n';
+			fout << '|' << molecule.getAtomName(atom_a) << '|' << total_valence << '|' << bonded_valence << '|' << total_bond_order << '|' << '\n';
 		}
 
 		fout << '-' << ',' << '-' << ',' << '-' << ',' << '-';

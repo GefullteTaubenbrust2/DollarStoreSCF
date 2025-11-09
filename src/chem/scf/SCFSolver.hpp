@@ -13,6 +13,8 @@ namespace scf {
 		down = 1,
 	};
 
+	void useCoreGuess();
+
 	void solveMOs();
 
 	void computeCoulombTerms(Spin spin);

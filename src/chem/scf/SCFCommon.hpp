@@ -34,7 +34,5 @@ namespace scf {
 
 	extern uint matrix_size;
 
-	extern double nuclear_energy;
-
 	extern SpinTreatment spin_treatment;
 }

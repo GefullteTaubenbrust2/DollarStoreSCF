@@ -1447,14 +1447,10 @@ namespace flo {
 										OSRepulsion(dx_buffer, A.y, B.y, C.y, D.y, P.y, Q.y, eta, zeta, exp_mu[1], exp_nu[1], exp_sigma[1], exp_tau[1], Nz + Nx + 1);
 										OSRepulsion(dx_buffer, A.z, B.z, C.z, D.z, P.z, Q.z, eta, zeta, exp_mu[2], exp_nu[2], exp_sigma[2], exp_tau[2], Nx + 1);
 										auto Dx = OSrepulsionGradient(dx_buffer, A.x, B.x, C.x, D.x, P.x, Q.x, alpha, beta, gamma, delta, exp_mu[0], exp_nu[0], exp_sigma[0], exp_tau[0]);
-										//OSRepulsion(dx_buffer, A.x, B.x, C.x, D.x, P.x, Q.x, eta, zeta, exp_mu[0], exp_nu[0], exp_sigma[0] + 1, exp_tau[0], 0);
-										//std::cout << "Valu " << dx_buffer[0] << '\n';
-										//OSRepulsion(dx_buffer, A.x, B.x, C.x, D.x, P.x, Q.x, eta, zeta, 1, 0, 0, 0, 0);
-										//std::cout << gross_factor * 2.0 * alpha * dx_buffer[0] << '\n';
 
-										OSRepulsion(dz_buffer, A.z, B.z, C.z, D.z, P.z, Q.z, eta, zeta, exp_mu[2], exp_nu[2], exp_sigma[2], exp_tau[2], Nx + Ny + 1);
-										OSRepulsion(dz_buffer, A.x, B.x, C.x, D.x, P.x, Q.x, eta, zeta, exp_mu[0], exp_nu[0], exp_sigma[0], exp_tau[0], Ny + 1);
-										auto Dy = OSrepulsionGradient(dz_buffer, A.y, B.y, C.y, D.y, P.y, Q.y, alpha, beta, gamma, delta, exp_mu[1], exp_nu[1], exp_sigma[1], exp_tau[1]);
+										OSRepulsion(dy_buffer, A.z, B.z, C.z, D.z, P.z, Q.z, eta, zeta, exp_mu[2], exp_nu[2], exp_sigma[2], exp_tau[2], Nx + Ny + 1);
+										OSRepulsion(dy_buffer, A.x, B.x, C.x, D.x, P.x, Q.x, eta, zeta, exp_mu[0], exp_nu[0], exp_sigma[0], exp_tau[0], Ny + 1);
+										auto Dy = OSrepulsionGradient(dy_buffer, A.y, B.y, C.y, D.y, P.y, Q.y, alpha, beta, gamma, delta, exp_mu[1], exp_nu[1], exp_sigma[1], exp_tau[1]);
 
 										OSRepulsion(dz_buffer, A.x, B.x, C.x, D.x, P.x, Q.x, eta, zeta, exp_mu[0], exp_nu[0], exp_sigma[0], exp_tau[0], Ny + Nz + 1);
 										OSRepulsion(dz_buffer, A.y, B.y, C.y, D.y, P.y, Q.y, eta, zeta, exp_mu[1], exp_nu[1], exp_sigma[1], exp_tau[1], Nz + 1);

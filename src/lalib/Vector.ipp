@@ -8,17 +8,22 @@ namespace flo {
 	}
 
 	template<typename T>
-	Vector<T>::Vector(T* memory_address, size_t size) :
-		entries(new(memory_address) T[size]) {
-	}
-
-	template<typename T>
 	Vector<T>::Vector(const std::initializer_list<T>& init) : entries(init) {
 	}
 
 	template<typename T>
 	Vector<T>::Vector(const Vector<T>& copy) {
 		*this = copy;
+	}
+
+	template<typename T>
+	Vector<T>::Vector<T>(Vector<T>& reference, size_t index, size_t size) {
+		if (index < reference.size()) entries.reference(reference.getRawData() + index, min(size, reference.entries.capacity() - index), reference.entries.capacity() - index);
+	}
+
+	template<typename T>
+	void Vector<T>::reference(Vector<T>& reference, size_t index, size_t size) {
+		if (index < reference.size()) entries.reference(reference.getRawData() + index, min(size, reference.entries.capacity() - index), reference.entries.capacity() - index);
 	}
 
 	template<typename T>
@@ -30,7 +35,16 @@ namespace flo {
 	}
 
 	template<typename T>
+	Vector<T>& Vector<T>::operator=(const T& value) {
+		for (int i = 0; i < entries.size(); ++i) {
+			entries[i] = value;
+		}
+		return *this;
+	}
+
+	template<typename T>
 	Vector<T>& Vector<T>::operator=(const intern::VectorAlgebra<T>& expression) {
+		resize(expression.getSize());
 		expression.evaluate(*this);
 		return *this;
 	}
@@ -81,6 +95,25 @@ namespace flo {
 			entries[i] -= b[i];
 		}
 		return *this;
+	}
+
+	template<typename T>
+	Vector<T>& Vector<T>::operator+=(const intern::VectorAlgebra<T>& expression) {
+		if (size() != expression.getSize()) return *this;
+		for (uint i = 0; i < size(); ++i) {
+			entries[i] += expression.evaluate(i);
+		}
+		return *this;
+	}
+
+	template<typename T>
+	Vector<T>& Vector<T>::operator-=(const intern::VectorAlgebra<T>& expression) {
+		if (size() != expression.getSize()) return *this;
+		for (uint i = 0; i < size(); ++i) {
+			entries[i] -= expression.evaluate(i);
+		}
+		return *this;
+
 	}
 
 	template<typename T>
@@ -171,6 +204,16 @@ namespace flo {
 	}
 
 	template<typename T>
+	intern::WeightedVectorSum<T> Vector<T>::operator+(const intern::VectorScalarProduct<T>& other) const {
+		return intern::WeightedVectorSum<T>(*this, 1.0, other.left, other.right);
+	}
+
+	template<typename T>
+	intern::WeightedVectorSum<T> Vector<T>::operator-(const intern::VectorScalarProduct<T>& other) const {
+		return intern::WeightedVectorSum<T>(*this, 1.0, other.left, -other.right);
+	}
+
+	template<typename T>
 	T* Vector<T>::getRawData() const {
 		return entries.getPtr();
 	}
@@ -190,6 +233,15 @@ namespace flo {
 	}
 
 	template<typename T>
+	T dot(const Vector<T>& x, const Vector<T>& y) {
+		T sum = (T)0.0;
+		for (int i = 0; i < x.size(); ++i) {
+			sum += x[i] * y[i];
+		}
+		return sum;
+	}
+
+	template<typename T>
 	Vector<T>& cc(const Vector<T>& x, Vector<T>& target) {
 		target.resize(x.size());
 		for (uint i = 0; i < x.size(); ++i) {
@@ -204,7 +256,7 @@ namespace flo {
 		for (int i = 0; i < (int)v.size() - 1; ++i) {
 			outs << v[i] << ", ";
 		}
-		if (v.size() > 1) outs << v[v.size() - 1];
+		if (v.size() > 0) outs << v[v.size() - 1];
 		return outs << ']';
 	}
 }

@@ -8,6 +8,8 @@ namespace flo {
 
 	extern const double common_atomic_masses[118];
 
+	extern const double covalent_radii_A[118];
+
 	enum class Element {
 		hydrogen = 1,
 		helium = 2,

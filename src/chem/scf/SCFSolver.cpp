@@ -3,7 +3,8 @@
 #include "SCFCommon.hpp"
 #include "ExactCoulomb.hpp"
 #include "Damping.hpp"
-#include "DIIS.hpp"
+#include "SCFDIIS.hpp"
+#include "Energy.hpp"
 
 #include "../GTO.hpp"
 
@@ -70,22 +71,7 @@ namespace scf {
 
 		computeEigenvectors(orthogonal_fock_matrix, asymmetric_buffer[0], mo_levels[(int)spin], diagonalization_buffer.getPtr());
 
-		//std::cout << mo_levels[0] << '\n';
-
 		coefficient_matrix[(int)spin] = orthogonalization_matrix * asymmetric_buffer[0];
-
-		/*fout.resetRows();
-		fout.offsetRight(2);
-		fout.addRow(NumberFormat::crudeFormat(5, 5), TextAlignment::right, 5);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-		fout.addRow(NumberFormat::scientificFormat(12, 5), TextAlignment::right, 12);
-
-		fout << (buffer[2] = lowdin_matrix * (asymmetric_buffer[1] = buffer[1] * lowdin_matrix));
-		fout << fock_matrix[0];*/
 	}
 
 	void computeDensityMatrix(const Spin spin) {
@@ -190,22 +176,7 @@ namespace scf {
 		return std::abs(total_electronic_energy - previous_electronic_energy) < energy_threshold;
 	}
 
-	void solveMOs() {
-		fock_matrix[0].resize(matrix_size);
-		two_electron_hamiltonian[0].resize(matrix_size);
-		coefficient_matrix[0].resize(matrix_size, matrix_size);
-		density_matrix[0].resize(basis.size());
-		total_density_matrix.resize(basis.size());
-
-		if (spin_treatment == SpinTreatment::unrestricted) {
-			fock_matrix[1].resize(matrix_size);
-			two_electron_hamiltonian[1].resize(matrix_size);
-			coefficient_matrix[1].resize(matrix_size, matrix_size);
-			density_matrix[1].resize(basis.size());
-		}
-
-		iteration = 0;
-
+	void useCoreGuess() {
 		for (uint mu = 0; mu < basis.size(); ++mu) {
 			for (uint nu = mu; nu < basis.size(); ++nu) {
 				density_matrix[0].at(mu, nu) = 0.0;
@@ -220,6 +191,10 @@ namespace scf {
 				}
 			}
 		}
+	}
+
+	void solveMOs() {
+		iteration = 0;
 
 		fout.resetRows();
 		fout.addRow(NumberFormat(), flo::TextAlignment::left, 9);
@@ -238,6 +213,9 @@ namespace scf {
 
 		diis::setIterationCount(8);
 
+		total_electronic_energy = 0.0;
+		previous_electronic_energy = 0.0;
+
 		while (!checkConvergence()) {
 			++iteration;
 			runSCFIteration();
@@ -254,5 +232,7 @@ namespace scf {
 		fout << '\n';
 
 		if (spin_treatment == SpinTreatment::unrestricted) printSpinContamination();
+
+		calculateEnergies();
 	}
 }

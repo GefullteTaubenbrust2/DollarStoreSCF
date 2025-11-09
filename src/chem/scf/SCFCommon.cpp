@@ -29,7 +29,5 @@ namespace scf {
 
 	uint matrix_size;
 
-	double nuclear_energy;
-
 	SpinTreatment spin_treatment;
 }

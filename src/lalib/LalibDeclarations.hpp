@@ -21,6 +21,7 @@ namespace flo {
 		template<typename T> struct VectorScalarSum;
 		template<typename T> struct VectorScalarDifference;
 		template<typename T> struct VectorScalarProduct;
+		template<typename T> struct WeightedVectorSum;
 
 		template<typename T> struct MatrixAlgebra;
 		template<typename T> struct MatrixProduct;
@@ -30,6 +31,7 @@ namespace flo {
 		template<typename T> struct MatrixScalarProduct;
 		template<typename T> struct MatrixTranspose;
 		template<typename T> struct MatrixAdjoint;
+		template<typename T> struct WeightedMatrixSum;
 	}
 
 	typedef Vector<double> VectorNd;

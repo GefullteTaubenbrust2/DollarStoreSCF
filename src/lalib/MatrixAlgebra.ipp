@@ -158,24 +158,24 @@ namespace intern {
 
 	template<typename T>
 	void MatrixSum<T>::evaluateColumn(MatrixBase<T>& target, uint ymin, uint ymax, uint x) const {
-		uint mid = min(min(x, ymax), (uint)MatrixSum<T>::left.getHeight());
-		uint end = min(ymax, (uint)MatrixSum<T>::left.getHeight());
+		uint mid = min(min(x, ymax), (uint)left.getHeight());
+		uint end = min(ymax, (uint)left.getHeight());
 
-		if (x < MatrixSum<T>::left.getWidth()) {
-			switch (MatrixSum<T>::left.getUpperSymmetry()) {
+		if (x < left.getWidth()) {
+			switch (left.getUpperSymmetry()) {
 			case MatrixSymmetryFlags::asymmetric:
 				for (uint y = ymin; y < mid; ++y) {
-					target.at(y, x) = MatrixSum<T>::left.at(y, x);
+					target.at(y, x) = left.at(y, x);
 				}
 				break;
 			case MatrixSymmetryFlags::transpose:
 				for (uint y = ymin; y < mid; ++y) {
-					target.at(y, x) = MatrixSum<T>::left.at(x, y);
+					target.at(y, x) = left.at(x, y);
 				}
 				break;
 			case MatrixSymmetryFlags::adjoint:
 				for (uint y = ymin; y < mid; ++y) {
-					target.at(y, x) = cc(MatrixSum<T>::left.at(x, y));
+					target.at(y, x) = cc(left.at(x, y));
 				}
 				break;
 			default:
@@ -184,20 +184,20 @@ namespace intern {
 				}
 				break;
 			}
-			switch (MatrixSum<T>::left.getLowerSymmetry()) {
+			switch (left.getLowerSymmetry()) {
 			case MatrixSymmetryFlags::asymmetric:
 				for (uint y = mid + 1; y < end; ++y) {
-					target.at(y, x) = MatrixSum<T>::left.at(y, x);
+					target.at(y, x) = left.at(y, x);
 				}
 				break;
 			case MatrixSymmetryFlags::transpose:
 				for (uint y = mid + 1; y < end; ++y) {
-					target.at(y, x) = MatrixSum<T>::left.at(y, x);
+					target.at(y, x) = left.at(y, x);
 				}
 				break;
 			case MatrixSymmetryFlags::adjoint:
 				for (uint y = mid + 1; y < end; ++y) {
-					target.at(y, x) = MatrixSum<T>::left.at(y, x);
+					target.at(y, x) = left.at(y, x);
 				}
 				break;
 			default:
@@ -206,8 +206,8 @@ namespace intern {
 				}
 				break;
 			}
-			if (x >= ymin && x < ymax && x < MatrixSum<T>::left.getHeight()) {
-				target.at(x, x) = MatrixSum<T>::left.at(x, x);
+			if (x >= ymin && x < ymax && x < left.getHeight()) {
+				target.at(x, x) = left.at(x, x);
 			}
 		}
 		else {
@@ -216,45 +216,45 @@ namespace intern {
 			}
 		}
 
-		mid = min(min(x, ymax), (uint)MatrixSum<T>::right.getHeight());
-		end = min(ymax, (uint)MatrixSum<T>::right.getHeight());
+		mid = min(min(x, ymax), (uint)right.getHeight());
+		end = min(ymax, (uint)right.getHeight());
 
-		switch (MatrixSum<T>::right.getUpperSymmetry()) {
+		switch (right.getUpperSymmetry()) {
 		case MatrixSymmetryFlags::asymmetric:
 			for (uint y = ymin; y < mid; ++y) {
-				target.at(y, x) += MatrixSum<T>::right.at(y, x);
+				target.at(y, x) += right.at(y, x);
 			}
 			break;
 		case MatrixSymmetryFlags::transpose:
 			for (uint y = ymin; y < mid; ++y) {
-				target.at(y, x) += MatrixSum<T>::right.at(x, y);
+				target.at(y, x) += right.at(x, y);
 			}
 			break;
 		case MatrixSymmetryFlags::adjoint:
 			for (uint y = ymin; y < mid; ++y) {
-				target.at(y, x) += cc(MatrixSum<T>::right.at(x, y));
+				target.at(y, x) += cc(right.at(x, y));
 			}
 			break;
 		}
-		switch (MatrixSum<T>::right.getLowerSymmetry()) {
+		switch (right.getLowerSymmetry()) {
 		case MatrixSymmetryFlags::asymmetric:
 			for (uint y = mid + 1; y < end; ++y) {
-				target.at(y, x) += MatrixSum<T>::right.at(y, x);
+				target.at(y, x) += right.at(y, x);
 			}
 			break;
 		case MatrixSymmetryFlags::transpose:
 			for (uint y = mid + 1; y < end; ++y) {
-				target.at(y, x) += MatrixSum<T>::right.at(y, x);
+				target.at(y, x) += right.at(y, x);
 			}
 			break;
 		case MatrixSymmetryFlags::adjoint:
 			for (uint y = mid + 1; y < end; ++y) {
-				target.at(y, x) += MatrixSum<T>::right.at(y, x);
+				target.at(y, x) += right.at(y, x);
 			}
 			break;
 		}
-		if (x >= ymin && x < ymax && x < MatrixSum<T>::right.getWidth() && x < MatrixSum<T>::right.getHeight()) {
-			target.at(x, x) += MatrixSum<T>::right.at(x, x);
+		if (x >= ymin && x < ymax && x < right.getWidth() && x < right.getHeight()) {
+			target.at(x, x) += right.at(x, x);
 		}
 	}
 
@@ -276,24 +276,24 @@ namespace intern {
 
 	template<typename T>
 	void MatrixDifference<T>::evaluateColumn(MatrixBase<T>& target, uint ymin, uint ymax, uint x) const {
-		uint mid = min(min(x, ymax), (uint)MatrixDifference<T>::left.getHeight());
-		uint end = min(ymax, (uint)MatrixDifference<T>::left.getHeight());
+		uint mid = min(min(x, ymax), (uint)left.getHeight());
+		uint end = min(ymax, (uint)left.getHeight());
 
-		if (x < MatrixDifference<T>::left.getWidth()) {
-			switch (MatrixDifference<T>::left.getUpperSymmetry()) {
+		if (x < left.getWidth()) {
+			switch (left.getUpperSymmetry()) {
 			case MatrixSymmetryFlags::asymmetric:
 				for (uint y = ymin; y < mid; ++y) {
-					target.at(y, x) = MatrixDifference<T>::left.at(y, x);
+					target.at(y, x) = left.at(y, x);
 				}
 				break;
 			case MatrixSymmetryFlags::transpose:
 				for (uint y = ymin; y < mid; ++y) {
-					target.at(y, x) = MatrixDifference<T>::left.at(x, y);
+					target.at(y, x) = left.at(x, y);
 				}
 				break;
 			case MatrixSymmetryFlags::adjoint:
 				for (uint y = ymin; y < mid; ++y) {
-					target.at(y, x) = cc(MatrixDifference<T>::left.at(x, y));
+					target.at(y, x) = cc(left.at(x, y));
 				}
 				break;
 			default:
@@ -302,20 +302,20 @@ namespace intern {
 				}
 				break;
 			}
-			switch (MatrixDifference<T>::left.getLowerSymmetry()) {
+			switch (left.getLowerSymmetry()) {
 			case MatrixSymmetryFlags::asymmetric:
 				for (uint y = mid + 1; y < end; ++y) {
-					target.at(y, x) = MatrixDifference<T>::left.at(y, x);
+					target.at(y, x) = left.at(y, x);
 				}
 				break;
 			case MatrixSymmetryFlags::transpose:
 				for (uint y = mid + 1; y < end; ++y) {
-					target.at(y, x) = MatrixDifference<T>::left.at(y, x);
+					target.at(y, x) = left.at(y, x);
 				}
 				break;
 			case MatrixSymmetryFlags::adjoint:
 				for (uint y = mid + 1; y < end; ++y) {
-					target.at(y, x) = MatrixDifference<T>::left.at(y, x);
+					target.at(y, x) = left.at(y, x);
 				}
 				break;
 			default:
@@ -324,8 +324,8 @@ namespace intern {
 				}
 				break;
 			}
-			if (x >= ymin && x < ymax && x < MatrixDifference<T>::left.getHeight()) {
-				target.at(x, x) = MatrixDifference<T>::left.at(x, x);
+			if (x >= ymin && x < ymax && x < left.getHeight()) {
+				target.at(x, x) = left.at(x, x);
 			}
 		}
 		else {
@@ -334,45 +334,45 @@ namespace intern {
 			}
 		}
 
-		mid = min(min(x, ymax), (uint)MatrixDifference<T>::right.getHeight());
-		end = min(ymax, (uint)MatrixDifference<T>::right.getHeight());
+		mid = min(min(x, ymax), (uint)right.getHeight());
+		end = min(ymax, (uint)right.getHeight());
 
-		switch (MatrixDifference<T>::right.getUpperSymmetry()) {
+		switch (right.getUpperSymmetry()) {
 		case MatrixSymmetryFlags::asymmetric:
 			for (uint y = ymin; y < mid; ++y) {
-				target.at(y, x) -= MatrixDifference<T>::right.at(y, x);
+				target.at(y, x) -= right.at(y, x);
 			}
 			break;
 		case MatrixSymmetryFlags::transpose:
 			for (uint y = ymin; y < mid; ++y) {
-				target.at(y, x) -= MatrixDifference<T>::right.at(x, y);
+				target.at(y, x) -= right.at(x, y);
 			}
 			break;
 		case MatrixSymmetryFlags::adjoint:
 			for (uint y = ymin; y < mid; ++y) {
-				target.at(y, x) -= cc(MatrixDifference<T>::right.at(x, y));
+				target.at(y, x) -= cc(right.at(x, y));
 			}
 			break;
 		}
-		switch (MatrixDifference<T>::right.getLowerSymmetry()) {
+		switch (right.getLowerSymmetry()) {
 		case MatrixSymmetryFlags::asymmetric:
 			for (uint y = mid + 1; y < end; ++y) {
-				target.at(y, x) -= MatrixDifference<T>::right.at(y, x);
+				target.at(y, x) -= right.at(y, x);
 			}
 			break;
 		case MatrixSymmetryFlags::transpose:
 			for (uint y = mid + 1; y < end; ++y) {
-				target.at(y, x) -= MatrixDifference<T>::right.at(y, x);
+				target.at(y, x) -= right.at(y, x);
 			}
 			break;
 		case MatrixSymmetryFlags::adjoint:
 			for (uint y = mid + 1; y < end; ++y) {
-				target.at(y, x) -= MatrixDifference<T>::right.at(y, x);
+				target.at(y, x) -= right.at(y, x);
 			}
 			break;
 		}
-		if (x >= ymin && x < ymax && x < MatrixDifference<T>::right.getWidth() && x < MatrixDifference<T>::right.getHeight()) {
-			target.at(x, x) -= MatrixDifference<T>::right.at(x, x);
+		if (x >= ymin && x < ymax && x < right.getWidth() && x < right.getHeight()) {
+			target.at(x, x) -= right.at(x, x);
 		}
 	}
 
@@ -517,6 +517,126 @@ namespace intern {
 	template<typename T>
 	size_t MatrixAdjoint<T>::getHeight() const {
 		return matrix.getWidth();
+	}
+
+	// ------------------------------------------------------------------------------------------------------------------------------------------- //
+
+	template<typename T>
+	WeightedMatrixSum<T>::WeightedMatrixSum<T>(const MatrixBase<T>& left, T left_weight, const MatrixBase<T>& right, T right_weight) :
+	left(left), left_weight(left_weight), right(right), right_weight(right_weight) {
+
+	}
+
+	template<typename T>
+	void WeightedMatrixSum<T>::evaluateColumn(MatrixBase<T>& target, uint ymin, uint ymax, uint x) const {
+		uint mid = min(min(x, ymax), (uint)left.getHeight());
+		uint end = min(ymax, (uint)left.getHeight());
+
+		if (x < left.getWidth()) {
+			switch (left.getUpperSymmetry()) {
+			case MatrixSymmetryFlags::asymmetric:
+				for (uint y = ymin; y < mid; ++y) {
+					target.at(y, x) = left_weight * left.at(y, x);
+				}
+				break;
+			case MatrixSymmetryFlags::transpose:
+				for (uint y = ymin; y < mid; ++y) {
+					target.at(y, x) = left_weight * left.at(x, y);
+				}
+				break;
+			case MatrixSymmetryFlags::adjoint:
+				for (uint y = ymin; y < mid; ++y) {
+					target.at(y, x) = left_weight * cc(left.at(x, y));
+				}
+				break;
+			default:
+				for (uint y = ymin; y < mid; ++y) {
+					target.at(y, x) = (T)0.0;
+				}
+				break;
+			}
+			switch (left.getLowerSymmetry()) {
+			case MatrixSymmetryFlags::asymmetric:
+				for (uint y = mid + 1; y < end; ++y) {
+					target.at(y, x) = left_weight * left.at(y, x);
+				}
+				break;
+			case MatrixSymmetryFlags::transpose:
+				for (uint y = mid + 1; y < end; ++y) {
+					target.at(y, x) = left_weight * left.at(y, x);
+				}
+				break;
+			case MatrixSymmetryFlags::adjoint:
+				for (uint y = mid + 1; y < end; ++y) {
+					target.at(y, x) = left_weight * left.at(y, x);
+				}
+				break;
+			default:
+				for (uint y = mid + 1; y < end; ++y) {
+					target.at(y, x) = (T)0.0;
+				}
+				break;
+			}
+			if (x >= ymin && x < ymax && x < left.getHeight()) {
+				target.at(x, x) = left_weight * left.at(x, x);
+			}
+		}
+		else {
+			for (uint y = ymin; y < end; ++y) {
+				target.at(y, x) = (T)0.0;
+			}
+		}
+
+		mid = min(min(x, ymax), (uint)right.getHeight());
+		end = min(ymax, (uint)right.getHeight());
+
+		switch (right.getUpperSymmetry()) {
+		case MatrixSymmetryFlags::asymmetric:
+			for (uint y = ymin; y < mid; ++y) {
+				target.at(y, x) += right_weight * right.at(y, x);
+			}
+			break;
+		case MatrixSymmetryFlags::transpose:
+			for (uint y = ymin; y < mid; ++y) {
+				target.at(y, x) += right_weight * right.at(x, y);
+			}
+			break;
+		case MatrixSymmetryFlags::adjoint:
+			for (uint y = ymin; y < mid; ++y) {
+				target.at(y, x) += right_weight * cc(right.at(x, y));
+			}
+			break;
+		}
+		switch (right.getLowerSymmetry()) {
+		case MatrixSymmetryFlags::asymmetric:
+			for (uint y = mid + 1; y < end; ++y) {
+				target.at(y, x) += right_weight * right.at(y, x);
+			}
+			break;
+		case MatrixSymmetryFlags::transpose:
+			for (uint y = mid + 1; y < end; ++y) {
+				target.at(y, x) += right_weight * right.at(y, x);
+			}
+			break;
+		case MatrixSymmetryFlags::adjoint:
+			for (uint y = mid + 1; y < end; ++y) {
+				target.at(y, x) += right_weight * right.at(y, x);
+			}
+			break;
+		}
+		if (x >= ymin && x < ymax && x < right.getWidth() && x < right.getHeight()) {
+			target.at(x, x) += right_weight * right.at(x, x);
+		}
+	}
+
+	template<typename T>
+	size_t WeightedMatrixSum<T>::getWidth() const {
+		return max(left.getWidth(), right.getWidth());
+	}
+
+	template<typename T>
+	size_t WeightedMatrixSum<T>::getHeight() const {
+		return max(left.getHeight(), right.getHeight());
 	}
 }
 	template<typename T>

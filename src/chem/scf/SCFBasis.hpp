@@ -7,6 +7,8 @@ namespace scf {
 
 	void assignBasis(const flo::BasisSet& basis_set, uint atom_index);
 
+	void assignBasis(const flo::BasisSet& basis_set, flo::Element element);
+
 	void assignBasis(const flo::BasisSet& basis_set);
 
 	void constructBasis();

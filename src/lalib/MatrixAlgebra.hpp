@@ -101,6 +101,14 @@ namespace intern {
 		virtual size_t getWidth() const override;
 
 		virtual size_t getHeight() const override;
+
+		WeightedMatrixSum<T> operator+(const MatrixBase<T>& other) const;
+
+		WeightedMatrixSum<T> operator-(const MatrixBase<T>& other) const;
+
+		WeightedMatrixSum<T> operator+(const MatrixScalarProduct<T>& other) const;
+
+		WeightedMatrixSum<T> operator-(const MatrixScalarProduct<T>& other) const;
 	};
 
 	template<typename T>
@@ -128,7 +136,24 @@ namespace intern {
 
 		virtual size_t getHeight() const override;
 	};
+
+	template<typename T>
+	struct WeightedMatrixSum : public MatrixAlgebra<T> {
+		const MatrixBase<T>& left;
+		const MatrixBase<T>& right;
+		T left_weight;
+		T right_weight;
+
+		WeightedMatrixSum<T>(const MatrixBase<T>& left, T left_weight, const MatrixBase<T>& right, T right_weight);
+
+		virtual void evaluateColumn(MatrixBase<T>& target, uint ymin, uint ymax, uint x) const override;
+
+		virtual size_t getWidth() const override;
+
+		virtual size_t getHeight() const override;
+	};
 }
+
 	template<typename T>
 	T dot(const MatrixBase<T>& left, const MatrixBase<T>& right);
 }

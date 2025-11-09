@@ -49,6 +49,10 @@ namespace flo {
 
 		virtual intern::MatrixVectorProduct<T> operator*(const Vector<T>& other) const;
 
+		virtual intern::WeightedMatrixSum<T> operator+(const intern::MatrixScalarProduct<T>& other) const;
+
+		virtual intern::WeightedMatrixSum<T> operator-(const intern::MatrixScalarProduct<T>& other) const;
+
 		T* getRawData() const;
 	};
 

@@ -171,19 +171,19 @@ namespace scf {
 
 						double factor = 0.5 * (coulomb_density - exchange_density);
 
-						result[atom_i * 3] += factor * integrals[0].x;
+						result[atom_i * 3]     += factor * integrals[0].x;
 						result[atom_i * 3 + 1] += factor * integrals[0].y;
 						result[atom_i * 3 + 2] += factor * integrals[0].z;
 
-						result[atom_k * 3] += factor * integrals[1].x;
+						result[atom_k * 3]     += factor * integrals[1].x;
 						result[atom_k * 3 + 1] += factor * integrals[1].y;
 						result[atom_k * 3 + 2] += factor * integrals[1].z;
 
-						result[atom_j * 3] += factor * integrals[2].x;
+						result[atom_j * 3]     += factor * integrals[2].x;
 						result[atom_j * 3 + 1] += factor * integrals[2].y;
 						result[atom_j * 3 + 2] += factor * integrals[2].z;
 
-						result[atom_l * 3] += factor * integrals[3].x;
+						result[atom_l * 3]     += factor * integrals[3].x;
 						result[atom_l * 3 + 1] += factor * integrals[3].y;
 						result[atom_l * 3 + 2] += factor * integrals[3].z;
 					}

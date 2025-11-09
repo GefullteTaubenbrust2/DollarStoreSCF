@@ -41,6 +41,12 @@ namespace scf {
 		atom_bases[atom_index] = basis_set.atomic_bases[(int)molecule[atom_index].element - 1];
 	}
 
+	void assignBasis(const flo::BasisSet& basis_set, Element element) {
+		for (int i = 0; i < molecule.size(); ++i) {
+			if (molecule[i].element == element) assignBasis(basis_set, i);
+		}
+	}
+
 	void assignBasis(const BasisSet& basis_set) {
 		for (int i = 0; i < molecule.size(); ++i) {
 			assignBasis(basis_set, i);
@@ -93,17 +99,12 @@ namespace scf {
 		orthogonalization_matrix = (asymmetric_buffer[2] = asymmetric_buffer[0] * eigenvalue_matrix) * (asymmetric_buffer[1] = T(asymmetric_buffer[0]));
 	}
 
-	//int p_permutations[3] = { 0, -1, 1 };
-	//int d_permutations[5] = { 0, -1, 1, -2, 2 };
+#ifdef PERMUTE_ORBITALS
+	int p_permutations[3] = { 0, -1, 1 };
+	int d_permutations[5] = { 0, -1, 1, -2, 2 };
+#endif
 
 	void constructBasis() {
-		nuclear_energy = 0.0;
-		for (int i = 0; i < molecule.size(); ++i) {
-			for (int j = i + 1; j < molecule.size(); ++j) {
-				nuclear_energy += (int)molecule[i].element * (int)molecule[j].element / length(molecule[i].position - molecule[j].position);
-			}
-		}
-
 		basis.clear();
 		for (int i = 0; i < molecule.size(); ++i) {
 			AtomicBasis& definition = atom_bases[i];
@@ -126,8 +127,10 @@ namespace scf {
 				basis_atoms.reserve(basis.size() + 2 * l + 1);
 
 				for (int m = -(int)l; m <= (int)l; ++m) {
-					//if (l == 1) ma = p_permutations[m + 1];
-					//if (l == 2) ma = d_permutations[m + 2];
+					#ifdef PERMUTE_ORBITALS
+						if (l == 1) ma = p_permutations[m + 1];
+						if (l == 2) ma = d_permutations[m + 2];
+					#endif
 					basis.push_back(ContractedGaussian(shell.primitives, l, m, center));
 					basis_atoms.push_back(i);
 				}
@@ -143,6 +146,19 @@ namespace scf {
 		for (int i = 0; i < MATRIX_BUFFER_SIZE; ++i) {
 			buffer[i].resize(basis.size());
 			asymmetric_buffer[i].resize(basis.size(), basis.size());
+		}
+
+		fock_matrix[0].resize(matrix_size);
+		two_electron_hamiltonian[0].resize(matrix_size);
+		coefficient_matrix[0].resize(matrix_size, matrix_size);
+		density_matrix[0].resize(basis.size());
+		total_density_matrix.resize(basis.size());
+
+		if (spin_treatment == SpinTreatment::unrestricted) {
+			fock_matrix[1].resize(matrix_size);
+			two_electron_hamiltonian[1].resize(matrix_size);
+			coefficient_matrix[1].resize(matrix_size, matrix_size);
+			density_matrix[1].resize(basis.size());
 		}
 
 		assignOverlapMatrix();

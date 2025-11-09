@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "SCFCommon.hpp"
+#include "Energy.hpp"
 
 #include "../../lalib/Lalib.hpp"
 #include "../../lalib/PrintMatrix.h"
@@ -101,42 +102,6 @@ ________________________________________________________________________________
 		}
 	}
 
-	double getKineticEnergy() {
-		double result = trace(total_density_matrix * kinetic_energy_matrix);
-		return result;
-	}
-
-	double getNuclearAttractionEnergy() {
-		double result = trace(total_density_matrix * nuclear_attraction_matrix);
-		return result;
-	}
-
-	double getElectronRepulsionEnergy() {
-		computeCoulombTerms(Spin::alpha);
-		if (spin_treatment == SpinTreatment::unrestricted) computeCoulombTerms(Spin::beta);
-		double result = 0.5 * trace(density_matrix[0] * two_electron_hamiltonian[0]);
-		if (spin_treatment == SpinTreatment::unrestricted) result += 0.5 * trace(density_matrix[1] * two_electron_hamiltonian[1]);
-		else result *= 2.0;
-		return result;
-	}
-
-	double getExchangeEnergy() {
-		two_electron_hamiltonian[0] = 0.0;
-		computeExchangeTerms(Spin::alpha);
-		if (spin_treatment == SpinTreatment::unrestricted) {
-			two_electron_hamiltonian[1] = 0.0;
-			computeExchangeTerms(Spin::beta);
-		}
-		double result = 0.5 * trace(density_matrix[0] * two_electron_hamiltonian[0]);
-		if (spin_treatment == SpinTreatment::unrestricted) result += 0.5 * trace(density_matrix[1] * two_electron_hamiltonian[1]);
-		else result *= 2.0;
-		return result;
-	}
-
-	double getCorrelationEnergy() {
-		return 0.0;
-	}
-
 	void printEnergyContributions() {
 		fout.resetRows();
 		fout.addRow(NumberFormat(), TextAlignment::left, 20);
@@ -158,8 +123,8 @@ ________________________________________________________________________________
 		fout << '|' << "Correlation" << '|' << correlation_energy << " Ha" << '|' << '\r';
 		fout << '|' << "Total 2e" << '|' << (repulsion_energy + exchange_energy + correlation_energy) << " Ha" << '|' << '\r';
 		fout << '|' << "Total electronic" << '|' << (kinetic_energy + potential_energy + repulsion_energy + exchange_energy + correlation_energy) << " Ha" << '|' << '\r';
-		fout << '|' << "Nuclear repulsion" << '|' << nuclear_energy << " Ha" << '|' << '\r';
-		fout << '|' << '_' << "Total" << '|' << '_' << (kinetic_energy + potential_energy + repulsion_energy + exchange_energy + correlation_energy + nuclear_energy) << " Ha" << '|' << '\n' << '\n';
+		fout << '|' << "Nuclear repulsion" << '|' << getNuclearRepulsionEnergy() << " Ha" << '|' << '\r';
+		fout << '|' << '_' << "Total" << '|' << '_' << (kinetic_energy + potential_energy + repulsion_energy + exchange_energy + correlation_energy + getNuclearRepulsionEnergy()) << " Ha" << '|' << '\n' << '\n';
 
 		fout.resetRows();
 		fout << '\n';
