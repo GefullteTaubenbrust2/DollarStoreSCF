@@ -1328,9 +1328,6 @@ namespace flo {
 		if (kt) results[7] += 0.5 * kt / zeta * ((*current)[index - ok] - omega / zeta * (*current)[index - ok + 1]);
 		if (lt) results[7] += 0.5 * lt / zeta * ((*previous)[index] - omega / zeta * (*previous)[index + 1]);
 
-		//std::cout << "Grad " << results[7] << '\n';
-		//std::cout << "Grad " << (*current)[index] << '\n';
-
 		if (it) results[0] = (*current)[index - oi];
 		if (jt) results[2] = (*current)[index - oj];
 		if (kt) results[4] = (*current)[index - ok];
@@ -1345,16 +1342,6 @@ namespace flo {
 		return_value[result_permutation[1]] = 2.0 * beta  * results[3] - jt * results[2];
 		return_value[result_permutation[2]] = 2.0 * gamma * results[5] - kt * results[4];
 		return_value[result_permutation[3]] = 2.0 * delta * results[7] - lt * results[6];
-
-		/*return_value[0] = 2.0 * alpha * results[1] - it * results[0];
-		return_value[1] = 2.0 * beta * results[3] - jt * results[2];
-		return_value[2] = 2.0 * gamma * results[5] - kt * results[4];
-		return_value[3] = 2.0 * delta * results[7] - lt * results[6];*/
-
-		/*return_value[0] = 2.0 * alpha * results[result_permutation[0] * 2 + 1] - it * results[result_permutation[0] * 2];
-		return_value[1] = 2.0 * beta * results[result_permutation[1] * 2 + 1] - jt * results[result_permutation[1] * 2];
-		return_value[2] = 2.0 * gamma * results[result_permutation[2] * 2 + 1] - kt * results[result_permutation[2] * 2];
-		return_value[3] = 2.0 * delta * results[result_permutation[3] * 2 + 1] - lt * results[result_permutation[3] * 2];*/
 
 		return return_value;
 	}
