@@ -51,6 +51,7 @@ namespace flo {
 
 		void assignInternalCoordinates(const VectorNd& internal_coordinates, double* step_size = nullptr);
 
+		// The 'displacement matrix' is equivalent to the pseudoinverse of Wilson's B matrix.
 		const MatrixNd& calculateDisplacementMatrix();
 
 		void printXYZData(const std::string& table_title) const;

@@ -134,7 +134,7 @@ namespace flo {
 		"oganesson"
 	};
 
-	// J. S. Coursey, D. J. Schwab, J. J. Tsai, and R. A. Dragoset
+	// [1] J. S. Coursey, D. J. Schwab, J. J. Tsai, and R. A. Dragoset
 	// NIST Physical Measurement Laboratory
 	// 
 	// From the website:
@@ -142,11 +142,11 @@ namespace flo {
 	// "
 	// The atomic weights are available for elements 1 through 118 and isotopic compositions or abundances are given when appropriate. 
 	// The atomic weights data were published by 
-	// J. Meija et al in Atomic Weights of the Elements 2013, 
+	// [2] J. Meija et al in Atomic Weights of the Elements 2013, 
 	// and the isotopic compositions data were published by 
-	// M. Berglund and M.E. Wieser in Isotopic Compositions of the Elements 2009. 
+	// [3] M. Berglund and M.E. Wieser in Isotopic Compositions of the Elements 2009. 
 	// The relative atomic masses of the isotopes data were published by 
-	// M. Wang, G. Audi, A.H. Wapstra, F.G. Kondev, M. MacCormick, X. Xu1, and B. Pfeiffer in The AME2012 Atomic Mass Evaluation
+	// [4] M. Wang, G. Audi, A.H. Wapstra, F.G. Kondev, M. MacCormick, X. Xu1, and B. Pfeiffer in The AME2012 Atomic Mass Evaluation
 	// "
 	// 
 	// Mean values are used. For elements beyond Pu, the most stable known nuclei are assumed and non-exact masses used.
@@ -162,7 +162,7 @@ namespace flo {
 						  266.000, 267.000, 268.000, 269.000, 278.000, 278.000, 282.000, 282.000, 286.000, 286.000, 286.000, 290.000, 290.000, 293.000, 294.000, 294.000
 	};
 
-	// V. Pekka Pyykko, M. Atsumi, Chem. Eur. J. 15, 2008, 186-197.
+	// [5] V. Pekka Pyykko, M. Atsumi, Chem. Eur. J. 15, 2008, 186-197.
 	const double covalent_radii_A[118] = {
 		0.32,                                                                                                 0.46,
 		1.33, 1.02,                                                             0.85, 0.75, 0.71, 0.63, 0.64, 0.67,

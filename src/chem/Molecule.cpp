@@ -159,6 +159,7 @@ namespace flo {
 			ordered_tree[i]->in_tree = false;
 		}
 
+		// TODO: Dihedral angles are undefined for 180° bond angles. This is a problem in linear molecules like allenes, cumulenes, carbodiimides etc.
 		for (int i = 3; i < size(); ++i) {
 			Node* node1 = ordered_tree[i];
 			Node* node2 = node1->neighbours[0];
@@ -173,6 +174,7 @@ namespace flo {
 			}
 
 			Node* node4 = nullptr;
+			Node* fallback = nullptr;
 			for (Node* node : node3->neighbours) {
 				if (node->in_tree && node != node2) {
 					node4 = node;
@@ -355,12 +357,15 @@ namespace flo {
 			vec3 bond1 = atom1 - atom2;
 			vec3 bond2 = atom3 - atom2;
 
+			vec3 dir = normalize(bond2);
+
+			double displaced_weight = 0.0;
 			for (int j = 0; j < size(); ++j) {
 				if (affected_indices[i * size() + j] & affected_by_bond_length) {
-					vec3 dir = normalize(bond2);
 					displacement_matrix.at(j * 3    , coordinate_index) = dir.x;
 					displacement_matrix.at(j * 3 + 1, coordinate_index) = dir.y;
 					displacement_matrix.at(j * 3 + 2, coordinate_index) = dir.z;
+					displaced_weight += 1.0;
 				}
 				else {
 					displacement_matrix.at(j * 3    , coordinate_index) = 0.0;
@@ -368,26 +373,54 @@ namespace flo {
 					displacement_matrix.at(j * 3 + 2, coordinate_index) = 0.0;
 				}
 			}
+			displaced_weight /= size();
+			// Balance the weight to separate the translational coordinate.
+			for (int j = 0; j < size(); ++j) {
+				displacement_matrix.at(j * 3    , coordinate_index) -= dir.x * displaced_weight;
+				displacement_matrix.at(j * 3 + 1, coordinate_index) -= dir.y * displaced_weight;
+				displacement_matrix.at(j * 3 + 2, coordinate_index) -= dir.z * displaced_weight;
+			}
+
 			++coordinate_index;
 			if (i) {
+				double active_inertia = 0.0;
+				double total_inertia = 0.0;
+				vec3 translation;
+
 				vec3 axis = normalize(cross(bond2, bond1));
 
 				for (int j = 0; j < size(); ++j) {
+					vec3 dir = cross(atoms[j].position - atom2, axis);
 					if (affected_indices[i * size() + j] & affected_by_bond_length) {
-						vec3 dir = cross(atoms[j].position - atom2, axis);
 						displacement_matrix.at(j * 3    , coordinate_index) = dir.x;
 						displacement_matrix.at(j * 3 + 1, coordinate_index) = dir.y;
 						displacement_matrix.at(j * 3 + 2, coordinate_index) = dir.z;
+						active_inertia += length2(dir);
+						translation += dir;
 					}
 					else {
 						displacement_matrix.at(j * 3    , coordinate_index) = 0.0;
 						displacement_matrix.at(j * 3 + 1, coordinate_index) = 0.0;
 						displacement_matrix.at(j * 3 + 2, coordinate_index) = 0.0;
 					}
+					total_inertia += length2(dir);
 				}
+				translation /= size();
+				// Balance the displacement to separate the translational and rotational coordinates.
+				for (int j = 0; j < size(); ++j) {
+					vec3 dir = cross(atoms[j].position - atom2, axis);
+					displacement_matrix.at(j * 3, coordinate_index)     -= translation.x + active_inertia / total_inertia * dir.x;
+					displacement_matrix.at(j * 3 + 1, coordinate_index) -= translation.y + active_inertia / total_inertia * dir.y;
+					displacement_matrix.at(j * 3 + 2, coordinate_index) -= translation.z + active_inertia / total_inertia * dir.z;
+				}
+
 				++coordinate_index;
 			}
 			if (i > 1) {
+				double active_inertia = 0.0;
+				double total_inertia = 0.0;
+				vec3 translation;
+
 				vec3 axis = normalize(bond1);
 
 				for (int j = 0; j < size(); ++j) {
@@ -396,13 +429,25 @@ namespace flo {
 						displacement_matrix.at(j * 3    , coordinate_index) = dir.x;
 						displacement_matrix.at(j * 3 + 1, coordinate_index) = dir.y;
 						displacement_matrix.at(j * 3 + 2, coordinate_index) = dir.z;
+						active_inertia += length2(dir);
+						translation += dir;
 					}
 					else {
 						displacement_matrix.at(j * 3    , coordinate_index) = 0.0;
 						displacement_matrix.at(j * 3 + 1, coordinate_index) = 0.0;
 						displacement_matrix.at(j * 3 + 2, coordinate_index) = 0.0;
 					}
+					total_inertia += length2(dir);
 				}
+				translation /= size();
+				// Balance the displacement to separate the translational and rotational coordinates.
+				for (int j = 0; j < size(); ++j) {
+					vec3 dir = cross(atoms[j].position - atom2, axis);
+					displacement_matrix.at(j * 3, coordinate_index) -= translation.x + active_inertia / total_inertia * dir.x;
+					displacement_matrix.at(j * 3 + 1, coordinate_index) -= translation.y + active_inertia / total_inertia * dir.y;
+					displacement_matrix.at(j * 3 + 2, coordinate_index) -= translation.z + active_inertia / total_inertia * dir.z;
+				}
+
 				++coordinate_index;
 			}
 		}

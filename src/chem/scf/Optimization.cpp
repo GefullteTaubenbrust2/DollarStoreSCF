@@ -84,7 +84,6 @@ namespace optimization {
 		if (use_internal_coordinates) {
 			const MatrixNd& displacement_matrix = molecule.calculateDisplacementMatrix();
 			internal_gradient = gradient * displacement_matrix;
-			internal_gradient *= 2.0;
 		}
 		else {
 			internal_gradient = gradient;
