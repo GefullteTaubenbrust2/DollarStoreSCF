@@ -4,7 +4,9 @@
 #include "../util/Types.hpp"
 
 namespace flo {
+	#ifndef PI
 	#define PI 3.14159265358979
+	#endif
 
 	template<typename T>
 	constexpr T max(const T& a, const T& b) {
@@ -61,6 +63,12 @@ namespace flo {
 			y = y * y;
 		}
 		return y * pow(x, p - l / 2);
+	}
+
+	template<typename T>
+	constexpr T pow(T x, int p) {
+		if (p > 0) return pow(x, (uint)p);
+		else return 1.0 / pow(x, (uint)(-p));
 	}
 
 	template<typename T>
@@ -202,7 +210,9 @@ namespace flo {
 
 	template<typename T>
 	Vector2<T> normalize(const Vector2<T>& x) {
-		return x / length(x);
+		double l = length(x);
+		if (!l) return 0.0 * x;
+		return x / l;
 	}
 
 	template<typename T>
@@ -358,7 +368,9 @@ namespace flo {
 
 	template<typename T>
 	Vector3<T> normalize(const Vector3<T>& x) {
-		return x / length(x);
+		double l = length(x);
+		if (!l) return 0.0 * x;
+		return x / l;
 	}
 
 	template<typename T>

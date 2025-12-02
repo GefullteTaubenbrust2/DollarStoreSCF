@@ -1,6 +1,5 @@
 #include "Optimization.h"
 
-#include "../../lalib/Lalib.hpp"
 #include "../../lalib/LBFGS.hpp"
 #include "../../lalib/DIIS.ipp"
 

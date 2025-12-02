@@ -9,5 +9,5 @@ namespace scf {
 
 	void printEnergyContributions();
 
-	void printMatrix(const flo::MatrixNd& matrix, const std::string title);
+	void printMatrix(const flo::MatrixBase<double>& matrix, const std::string title);
 }

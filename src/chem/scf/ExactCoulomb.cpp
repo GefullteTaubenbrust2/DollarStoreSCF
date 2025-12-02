@@ -39,7 +39,7 @@ namespace scf {
 	}
 
 	void assignExactRepulsionTensor() {
-		printExactRepulsionStart("Computing exact four-center integrals... ");
+		printExactRepulsionStart("Computing four-center integrals... ");
 
 		SymmetricMatrixNd diagonal_terms(basis.size());
 		for (uint a = 0; a < basis.size(); ++a) {
@@ -123,7 +123,7 @@ namespace scf {
 	}
 
 	void addExactTwoElectronGradient(VectorNd& result) {
-		printExactRepulsionStart("Computing exact four-center gradients... ");
+		printExactRepulsionStart("Computing four-center gradients... ");
 
 		for (uint i = 0; i < basis.size(); ++i) {
 			uint atom_i = basis_atoms[i];

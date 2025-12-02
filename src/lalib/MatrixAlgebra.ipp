@@ -45,46 +45,55 @@ namespace intern {
 		T sum = (T)0.0;
 		switch (flags) {
 		case loro:
+			max = flo::min((size_t)max, flo::min(m1.getWidth(), m2.getHeight()));
 			for (uint i = min; i < max; ++i) {
 				sum += m1.at(y, i) * m2.at(i, x);
 			}
 			break;
 		case ltro:
+			max = flo::min((size_t)max, flo::min(m1.getHeight(), m2.getHeight()));
 			for (uint i = min; i < max; ++i) {
 				sum += m1.at(i, y) * m2.at(i, x);
 			}
 			break;
 		case laro:
+			max = flo::min((size_t)max, flo::min(m1.getHeight(), m2.getHeight()));
 			for (uint i = min; i < max; ++i) {
 				sum += cc(m1.at(i, y)) * m2.at(i, x);
 			}
 			break;
 		case lort:
+			max = flo::min((size_t)max, flo::min(m1.getWidth(), m2.getWidth()));
 			for (uint i = min; i < max; ++i) {
 				sum += m1.at(y, i) * m2.at(x, i);
 			}
 			break;
 		case ltrt:
+			max = flo::min((size_t)max, flo::min(m1.getHeight(), m2.getWidth()));
 			for (uint i = min; i < max; ++i) {
 				sum += m1.at(i, y) * m2.at(x, i);
 			}
 			break;
 		case lart:
+			max = flo::min((size_t)max, flo::min(m1.getHeight(), m2.getWidth()));
 			for (uint i = min; i < max; ++i) {
 				sum += cc(m1.at(i, y)) * m2.at(x, i);
 			}
 			break;
 		case lora:
+			max = flo::min((size_t)max, flo::min(m1.getWidth(), m2.getWidth()));
 			for (uint i = min; i < max; ++i) {
-				sum += m1.at(y, i) * m2.at(x, i);
+				sum += m1.at(y, i) * cc(m2.at(x, i));
 			}
 			break;
 		case ltra:
+			max = flo::min((size_t)max, flo::min(m1.getHeight(), m2.getWidth()));
 			for (uint i = min; i < max; ++i) {
-				sum += m1.at(i, y) * m2.at(x, i);
+				sum += m1.at(i, y) * cc(m2.at(x, i));
 			}
 			break;
 		case lara:
+			max = flo::min((size_t)max, flo::min(m1.getHeight(), m2.getWidth()));
 			for (uint i = min; i < max; ++i) {
 				sum += cc(m1.at(i, y) * m2.at(x, i));
 			}
@@ -112,15 +121,15 @@ namespace intern {
 		if (right.getHeight() < max_i) max_i = right.getHeight();
 		if (y > x) {
 			return	evaluateSum<T>(left, right, flags_lu, y, x, 0, x) +
-				evaluateSum<T>(left, right, flags_ll, y, x, x + 1, y) +
-				evaluateSum<T>(left, right, flags_ul, y, x, y + 1, max_i) +
-				evaluateDiagonal<T>(left, right, flags_ll, y, x);
+					evaluateSum<T>(left, right, flags_ll, y, x, x + 1, y) +
+					evaluateSum<T>(left, right, flags_ul, y, x, y + 1, max_i) +
+					evaluateDiagonal<T>(left, right, flags_ll, y, x);
 		}
 		else {
 			return	evaluateSum<T>(left, right, flags_lu, y, x, 0, y) +
-				evaluateSum<T>(left, right, flags_uu, y, x, y + 1, x) +
-				evaluateSum<T>(left, right, flags_ul, y, x, x + 1, max_i) +
-				evaluateDiagonal<T>(left, right, flags_uu, y, x);
+					evaluateSum<T>(left, right, flags_uu, y, x, y + 1, x) +
+					evaluateSum<T>(left, right, flags_ul, y, x, x + 1, max_i) +
+					evaluateDiagonal<T>(left, right, flags_uu, y, x);
 		}
 	}
 

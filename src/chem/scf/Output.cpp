@@ -130,7 +130,7 @@ ________________________________________________________________________________
 		fout << '\n';
 	}
 
-	void printMatrix(const MatrixNd& matrix, const std::string title) {
+	void printMatrix(const MatrixBase<double>& matrix, const std::string title) {
 		fout.resetRows();
 		fout.offsetRight(2);
 		fout.addRow(NumberFormat(), TextAlignment::centered, 87);

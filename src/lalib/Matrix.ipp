@@ -181,12 +181,12 @@ namespace flo {
 	Matrix<T>& Matrix<T>::operator=(T value) {
 		for (uint x = 0; x < width; ++x) {
 			for (uint y = x + 1; y < height; ++y) {
-				at(x, y) = 0.0;
+				at(y, x) = 0.0;
 			}
 		}
 		for (uint x = 0; x < width; ++x) {
-			for (uint y = 0; y < x; ++y) {
-				at(x, y) = 0.0;
+			for (uint y = 0; y < x && y < height; ++y) {
+				at(y, x) = 0.0;
 			}
 		}
 		for (uint i = 0; i < min(width, height); ++i) {

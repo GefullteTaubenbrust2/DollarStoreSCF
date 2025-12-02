@@ -25,7 +25,7 @@ namespace flo {
 	private:
 		std::vector<uint> internal_coordinate_indices;
 		std::vector<int> affected_indices;
-		MatrixNd displacement_matrix;
+		MatrixNd displacement_matrix, wilson_matrix;
 		vec3 base_position;
 		vec3 base_direction;
 		vec3 base_normal;
@@ -53,6 +53,13 @@ namespace flo {
 
 		// The 'displacement matrix' is equivalent to the pseudoinverse of Wilson's B matrix.
 		const MatrixNd& calculateDisplacementMatrix();
+
+		const MatrixNd& calculateWilsonMatrix();
+
+		// The second derivatives of the internal coordinates as described in
+		// [1] B. Vebjorn, H. Trygve, The efficient optimization of molecular geometries using redunant 
+		//     internal coordinates, Chem. Phys. 117, 2002, 10.1063/1.1515483.
+		void calculateCoordinateHessian(MatrixNd& matrix, size_t coordinate_index);
 
 		void printXYZData(const std::string& table_title) const;
 

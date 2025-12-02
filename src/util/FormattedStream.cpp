@@ -322,6 +322,9 @@ namespace flo {
 				uint chars_since_space = 5;
 				std::string line;
 
+				int left_offset = 0;
+				bool has_tab = false;
+
 				if (line_count < cells[i].padding.top) {
 					line = "";
 					has_content = true;
@@ -329,6 +332,12 @@ namespace flo {
 				else if (cell_content.size() > max_width) {
 					for (int j = 0; j < cell_content.size() && j < max_width; ++j) {
 						char c = cell_content[j];
+						if (c == '\t') {
+							cell_content[j] = ' ';
+							left_offset = j;
+							has_tab = true;
+							c = ' ';
+						}
 						if (c == ' ') {
 							++space_number;
 							chars_since_space = 0;
@@ -344,6 +353,8 @@ namespace flo {
 							space_number = 0;
 							linebreak_index = j;
 							has_content = true;
+							has_tab = false;
+							left_offset = 0;
 							break;
 						}
 						else if (space_number < 1) {
@@ -373,6 +384,10 @@ namespace flo {
 
 					for (int i = 0; i < cell_content.size(); ++i) {
 						if (cell_content[i] != ' ') has_content = true;
+					}
+
+					if (has_content && has_tab) {
+						cell_content = std::string(left_offset, ' ') + '\t' + cell_content;
 					}
 				}
 				else {

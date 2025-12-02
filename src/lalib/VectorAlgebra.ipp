@@ -179,7 +179,7 @@ namespace intern {
 					}
 					break;
 				}
-				sum += vector[x] * matrix.at(x, x);
+				if (x < matrix.getWidth() && x < matrix.getHeight()) sum += vector[x] * matrix.at(x, x);
 				target[x] = sum;
 			}
 		}

@@ -14,7 +14,7 @@ namespace flo {
 	}
 
 	Atom::Atom(const vec3& position, Element element) :
-	position(position), element(element), charge((uint)element), mass(common_atomic_masses[(int)element] * Da_to_me) {
+	position(position), element(element), charge((uint)element), mass(common_atomic_masses[(int)element - 1] * Da_to_me) {
 	}
 
 	vec3 Atom::getRepulsionGradient(const vec3& pos) {
@@ -128,10 +128,12 @@ namespace flo {
 		internal_coordinate_indices.clear();
 		internal_coordinate_indices.reserve((size() - 1) * 4);
 
-		internal_coordinate_indices.push_back(0);
-		internal_coordinate_indices.push_back(0);
-		internal_coordinate_indices.push_back(ordered_tree[0]->index);
-		internal_coordinate_indices.push_back(ordered_tree[1]->index);
+		if (size() > 1) {
+			internal_coordinate_indices.push_back(0);
+			internal_coordinate_indices.push_back(0);
+			internal_coordinate_indices.push_back(ordered_tree[0]->index);
+			internal_coordinate_indices.push_back(ordered_tree[1]->index);
+		}
 
 		if (size() > 2) {
 			internal_coordinate_indices.reserve(5);
@@ -346,6 +348,12 @@ namespace flo {
 	const MatrixNd& Molecule::calculateDisplacementMatrix() {
 		displacement_matrix.resize(getInternalCoordinateCount(), size() * 3);
 
+		vec3 center_of_mass(0.0);
+		for (int i = 0; i < size(); ++i) {
+			center_of_mass += atoms[i].position;
+		}
+		center_of_mass /= size();
+
 		int coordinate_index = 0;
 		for (int i = 0; i < internal_coordinate_indices.size() / 4; ++i) {
 			vec3& atom0 = atoms[internal_coordinate_indices[i * 4]].position;
@@ -358,6 +366,10 @@ namespace flo {
 			vec3 bond2 = atom3 - atom2;
 
 			vec3 dir = normalize(bond2);
+			vec3 axis = normalize(cross(atom3 - center_of_mass, bond2));
+
+			double active_inertia = 0.0;
+			double total_inertia = 0.0;
 
 			double displaced_weight = 0.0;
 			for (int j = 0; j < size(); ++j) {
@@ -366,19 +378,25 @@ namespace flo {
 					displacement_matrix.at(j * 3 + 1, coordinate_index) = dir.y;
 					displacement_matrix.at(j * 3 + 2, coordinate_index) = dir.z;
 					displaced_weight += 1.0;
+					vec3 pos = atoms[j].position - center_of_mass;
+					pos -= axis * dot(axis, pos);
+					vec3 angular_momentum = cross(dir, pos);
+					active_inertia += (dot(angular_momentum, axis) > 0.0 ? 1.0 : -1.0) * length(angular_momentum);
 				}
 				else {
 					displacement_matrix.at(j * 3    , coordinate_index) = 0.0;
 					displacement_matrix.at(j * 3 + 1, coordinate_index) = 0.0;
 					displacement_matrix.at(j * 3 + 2, coordinate_index) = 0.0;
 				}
+				total_inertia += length2(cross(atoms[j].position - center_of_mass, axis));
 			}
 			displaced_weight /= size();
-			// Balance the weight to separate the translational coordinate.
+			// Balance the displacement to separate the translational and rotational coordinates.
 			for (int j = 0; j < size(); ++j) {
-				displacement_matrix.at(j * 3    , coordinate_index) -= dir.x * displaced_weight;
-				displacement_matrix.at(j * 3 + 1, coordinate_index) -= dir.y * displaced_weight;
-				displacement_matrix.at(j * 3 + 2, coordinate_index) -= dir.z * displaced_weight;
+				vec3 rot = cross(atoms[j].position - center_of_mass, axis);
+				displacement_matrix.at(j * 3    , coordinate_index) -= dir.x * displaced_weight + active_inertia / total_inertia * rot.x;
+				displacement_matrix.at(j * 3 + 1, coordinate_index) -= dir.y * displaced_weight + active_inertia / total_inertia * rot.y;
+				displacement_matrix.at(j * 3 + 2, coordinate_index) -= dir.z * displaced_weight + active_inertia / total_inertia * rot.z;
 			}
 
 			++coordinate_index;
@@ -391,11 +409,15 @@ namespace flo {
 
 				for (int j = 0; j < size(); ++j) {
 					vec3 dir = cross(atoms[j].position - atom2, axis);
+					vec3 axis_offset = cross(atoms[j].position - center_of_mass, axis);
 					if (affected_indices[i * size() + j] & affected_by_bond_length) {
 						displacement_matrix.at(j * 3    , coordinate_index) = dir.x;
 						displacement_matrix.at(j * 3 + 1, coordinate_index) = dir.y;
 						displacement_matrix.at(j * 3 + 2, coordinate_index) = dir.z;
-						active_inertia += length2(dir);
+						vec3 pos = atoms[j].position - center_of_mass;
+						pos -= axis * dot(axis, pos);
+						vec3 angular_momentum = cross(dir, pos);
+						active_inertia += (dot(angular_momentum, axis) > 0.0 ? 1.0 : -1.0) * length(angular_momentum);
 						translation += dir;
 					}
 					else {
@@ -403,12 +425,12 @@ namespace flo {
 						displacement_matrix.at(j * 3 + 1, coordinate_index) = 0.0;
 						displacement_matrix.at(j * 3 + 2, coordinate_index) = 0.0;
 					}
-					total_inertia += length2(dir);
+					total_inertia += length2(axis_offset);
 				}
 				translation /= size();
 				// Balance the displacement to separate the translational and rotational coordinates.
 				for (int j = 0; j < size(); ++j) {
-					vec3 dir = cross(atoms[j].position - atom2, axis);
+					vec3 dir = cross(atoms[j].position - center_of_mass, axis);
 					displacement_matrix.at(j * 3, coordinate_index)     -= translation.x + active_inertia / total_inertia * dir.x;
 					displacement_matrix.at(j * 3 + 1, coordinate_index) -= translation.y + active_inertia / total_inertia * dir.y;
 					displacement_matrix.at(j * 3 + 2, coordinate_index) -= translation.z + active_inertia / total_inertia * dir.z;
@@ -424,12 +446,16 @@ namespace flo {
 				vec3 axis = normalize(bond1);
 
 				for (int j = 0; j < size(); ++j) {
+					vec3 dir = cross(atoms[j].position - atom2, axis);
+					vec3 axis_offset = cross(atoms[j].position - center_of_mass, axis);
 					if (affected_indices[i * size() + j]) {
-						vec3 dir = cross(atoms[j].position - atom2, axis);
 						displacement_matrix.at(j * 3    , coordinate_index) = dir.x;
 						displacement_matrix.at(j * 3 + 1, coordinate_index) = dir.y;
 						displacement_matrix.at(j * 3 + 2, coordinate_index) = dir.z;
-						active_inertia += length2(dir);
+						vec3 pos = atoms[j].position - center_of_mass;
+						pos -= axis * dot(axis, pos);
+						vec3 angular_momentum = cross(dir, pos);
+						active_inertia += (dot(angular_momentum, axis) > 0.0 ? 1.0 : -1.0) * length(angular_momentum);
 						translation += dir;
 					}
 					else {
@@ -437,13 +463,13 @@ namespace flo {
 						displacement_matrix.at(j * 3 + 1, coordinate_index) = 0.0;
 						displacement_matrix.at(j * 3 + 2, coordinate_index) = 0.0;
 					}
-					total_inertia += length2(dir);
+					total_inertia += length2(axis_offset);
 				}
 				translation /= size();
 				// Balance the displacement to separate the translational and rotational coordinates.
 				for (int j = 0; j < size(); ++j) {
-					vec3 dir = cross(atoms[j].position - atom2, axis);
-					displacement_matrix.at(j * 3, coordinate_index) -= translation.x + active_inertia / total_inertia * dir.x;
+					vec3 dir = cross(atoms[j].position - center_of_mass, axis);
+					displacement_matrix.at(j * 3    , coordinate_index)     -= translation.x + active_inertia / total_inertia * dir.x;
 					displacement_matrix.at(j * 3 + 1, coordinate_index) -= translation.y + active_inertia / total_inertia * dir.y;
 					displacement_matrix.at(j * 3 + 2, coordinate_index) -= translation.z + active_inertia / total_inertia * dir.z;
 				}
@@ -452,6 +478,240 @@ namespace flo {
 			}
 		}
 		return displacement_matrix;
+	}
+
+	const MatrixNd& Molecule::calculateWilsonMatrix() {
+		wilson_matrix.resize(size() * 3, getInternalCoordinateCount());
+		wilson_matrix = 0.0;
+
+		int coordinate_index = 0;
+		for (int i = 0; i < internal_coordinate_indices.size() / 4; ++i) {
+			uint index0 = internal_coordinate_indices[i * 4];
+			uint index1 = internal_coordinate_indices[i * 4 + 1];
+			uint index2 = internal_coordinate_indices[i * 4 + 2];
+			uint index3 = internal_coordinate_indices[i * 4 + 3];
+
+			vec3& atom0 = atoms[index0].position;
+			vec3& atom1 = atoms[index1].position;
+			vec3& atom2 = atoms[index2].position;
+			vec3& atom3 = atoms[index3].position;
+
+			vec3 bond0 = atom0 - atom1;
+			vec3 bond1 = atom1 - atom2;
+			vec3 bond2 = atom3 - atom2;
+
+			vec3 dir2 = normalize(bond2);
+
+			wilson_matrix.at(coordinate_index, index3 * 3    ) = dir2.x;
+			wilson_matrix.at(coordinate_index, index3 * 3 + 1) = dir2.y;
+			wilson_matrix.at(coordinate_index, index3 * 3 + 2) = dir2.z;
+
+			wilson_matrix.at(coordinate_index, index2 * 3    ) = -dir2.x;
+			wilson_matrix.at(coordinate_index, index2 * 3 + 1) = -dir2.y;
+			wilson_matrix.at(coordinate_index, index2 * 3 + 2) = -dir2.z;
+
+			++coordinate_index;
+
+			if (i) {
+				vec3 axis = normalize(cross(bond1, bond2));
+
+				vec3 a = cross(bond1, axis) / length2(bond1);
+				vec3 b = cross(axis, bond2) / length2(bond2);
+
+				wilson_matrix.at(coordinate_index, index1 * 3    ) = a.x;
+				wilson_matrix.at(coordinate_index, index1 * 3 + 1) = a.y;
+				wilson_matrix.at(coordinate_index, index1 * 3 + 2) = a.z;
+
+				wilson_matrix.at(coordinate_index, index2 * 3    ) = -a.x - b.x;
+				wilson_matrix.at(coordinate_index, index2 * 3 + 1) = -a.y - b.y;
+				wilson_matrix.at(coordinate_index, index2 * 3 + 2) = -a.z - b.z;
+
+				wilson_matrix.at(coordinate_index, index3 * 3    ) = b.x;
+				wilson_matrix.at(coordinate_index, index3 * 3 + 1) = b.y;
+				wilson_matrix.at(coordinate_index, index3 * 3 + 2) = b.z;
+
+				++coordinate_index;
+			}
+			if (i > 1) {
+				vec3 u = normalize(bond0);
+				vec3 w = normalize(bond1) * (-1.0);
+				vec3 v = normalize(bond2);
+
+				double cos_u = dot(u, w);
+				double cos_v = dot(v, w);
+
+				double sin2_u = 1.0 - cos_u * cos_u;
+				double sin2_v = 1.0 - cos_v * cos_v;
+
+				vec3 a = cross(u, w) / (length(bond0) * sin2_u);
+				vec3 b = cross(v, w) / (length(bond2) * sin2_v);
+				vec3 c = (cross(u, w) * cos_u / sin2_u - cross(v, w) * cos_v / sin2_v) / length(bond1);
+
+				wilson_matrix.at(coordinate_index, index0 * 3    ) =  a.x;
+				wilson_matrix.at(coordinate_index, index0 * 3 + 1) =  a.y;
+				wilson_matrix.at(coordinate_index, index0 * 3 + 2) =  a.z;
+
+				wilson_matrix.at(coordinate_index, index1 * 3    ) =  c.x - a.x;
+				wilson_matrix.at(coordinate_index, index1 * 3 + 1) =  c.y - a.y;
+				wilson_matrix.at(coordinate_index, index1 * 3 + 2) =  c.z - a.z;
+
+				wilson_matrix.at(coordinate_index, index2 * 3    ) =  b.x - c.x;
+				wilson_matrix.at(coordinate_index, index2 * 3 + 1) =  b.y - c.y;
+				wilson_matrix.at(coordinate_index, index2 * 3 + 2) =  b.z - c.z;
+
+				wilson_matrix.at(coordinate_index, index3 * 3    ) = -b.x;
+				wilson_matrix.at(coordinate_index, index3 * 3 + 1) = -b.y;
+				wilson_matrix.at(coordinate_index, index3 * 3 + 2) = -b.z;
+
+				++coordinate_index;
+			}
+		}
+
+		return wilson_matrix;
+	}
+
+	void Molecule::calculateCoordinateHessian(MatrixNd& matrix, size_t coordinate_index) {
+		matrix.resize(size() * 3, size() * 3);
+		matrix = 0.0;
+
+		int tuple_index = 0;
+		int type_index = 0;
+
+		if (coordinate_index == 1) tuple_index = 1;
+		else if (coordinate_index == 2) {
+			tuple_index = 1;
+			type_index = 1;
+		}
+		else if (coordinate_index) {
+			tuple_index = coordinate_index / 3 + 1;
+			type_index = coordinate_index % 3;
+		}
+
+		uint index0 = internal_coordinate_indices[tuple_index * 4];
+		uint index1 = internal_coordinate_indices[tuple_index * 4 + 1];
+		uint index2 = internal_coordinate_indices[tuple_index * 4 + 2];
+		uint index3 = internal_coordinate_indices[tuple_index * 4 + 3];
+
+		vec3& atom0 = atoms[index0].position;
+		vec3& atom1 = atoms[index1].position;
+		vec3& atom2 = atoms[index2].position;
+		vec3& atom3 = atoms[index3].position;
+
+		vec3 bond0 = atom0 - atom1;
+		vec3 bond1 = atom1 - atom2;
+		vec3 bond2 = atom3 - atom2;
+
+		double lambda_u = length(bond2);
+		vec3 u = bond2 / lambda_u;
+
+		switch (type_index) {
+		case(0): {
+			for (int i = 0; i < 3; ++i) {
+				for (int j = 0; j < 3; ++j) {
+					matrix.at(index3 * 3 + i, index3 * 3 + j) = -(u[i] * u[j] - (i == j ? 1.0 : 0.0)) / lambda_u;
+					matrix.at(index2 * 3 + i, index2 * 3 + j) = -(u[i] * u[j] - (i == j ? 1.0 : 0.0)) / lambda_u;
+					matrix.at(index3 * 3 + i, index2 * 3 + j) =  (u[i] * u[j] - (i == j ? 1.0 : 0.0)) / lambda_u;
+					matrix.at(index2 * 3 + i, index3 * 3 + j) =  (u[i] * u[j] - (i == j ? 1.0 : 0.0)) / lambda_u;
+				}
+			}
+			break;
+		}
+		case(1): {
+			double lambda_v = length(bond1);
+			vec3 v = bond1 / lambda_v;
+			double cos_a = dot(u, v);
+			double sin_a = std::sqrt(1.0 - cos_a * cos_a);
+
+			for (int i = 0; i < 3; ++i) {
+				for (int j = 0; j < 3; ++j) {
+					double delta_ij = i == j;
+
+					double term0 = (u[i] * v[j] + u[j] * v[i] - 3.0 * u[i] * u[j] * cos_a + delta_ij * cos_a) / (lambda_u * lambda_u * sin_a);
+					double term1 = (v[i] * u[j] + v[j] * u[i] - 3.0 * v[i] * v[j] * cos_a + delta_ij * cos_a) / (lambda_v * lambda_v * sin_a);
+					double term2 = (u[i] * u[j] + v[j] * v[i] - u[i] * v[j] * cos_a - delta_ij) / (lambda_u * lambda_v * sin_a);
+					double term3 = (v[i] * v[j] + u[j] * u[i] - v[i] * u[j] * cos_a - delta_ij) / (lambda_u * lambda_v * sin_a);
+
+					double B3i = wilson_matrix.at(coordinate_index, index3 * 3 + i);
+					double B2i = wilson_matrix.at(coordinate_index, index2 * 3 + i);
+					double B1i = wilson_matrix.at(coordinate_index, index1 * 3 + i);
+
+					double B3j = wilson_matrix.at(coordinate_index, index3 * 3 + j);
+					double B2j = wilson_matrix.at(coordinate_index, index2 * 3 + j);
+					double B1j = wilson_matrix.at(coordinate_index, index1 * 3 + j);
+
+					matrix.at(index3 * 3 + i, index3 * 3 + j) = -cos_a / sin_a * B3i * B3j + term0;
+					matrix.at(index2 * 3 + i, index3 * 3 + j) = -cos_a / sin_a * B2i * B3j - term0 - term3;
+					matrix.at(index3 * 3 + i, index2 * 3 + j) = -cos_a / sin_a * B3i * B2j - term0 - term2;
+					matrix.at(index2 * 3 + i, index2 * 3 + j) = -cos_a / sin_a * B2i * B2j + term0 + term1 + term2 + term3;
+
+					matrix.at(index1 * 3 + i, index1 * 3 + j) = -cos_a / sin_a * B1i * B1j + term1;
+					matrix.at(index2 * 3 + i, index1 * 3 + j) = -cos_a / sin_a * B2i * B1j - term1 - term2;
+					matrix.at(index1 * 3 + i, index2 * 3 + j) = -cos_a / sin_a * B1i * B2j - term1 - term3;
+
+					matrix.at(index3 * 3 + i, index1 * 3 + j) = -cos_a / sin_a * B3i * B1j + term2;
+					matrix.at(index1 * 3 + i, index3 * 3 + j) = -cos_a / sin_a * B1i * B3j + term3;
+				}
+			}
+			break;
+		}
+		// TODO: This is gives very wrong results.
+		case(2): {
+			double lambda_v = length(bond0);
+			vec3 v = bond0 / lambda_v;
+			double lambda_w = length(bond1);
+			vec3 w = bond1 / lambda_w;
+
+			vec3 uw = cross(u, w);
+			vec3 vw = cross(v, w);
+
+			double cos_u = dot(u, w);
+			double sin2_u = 1.0 - cos_u * cos_u;
+			double sin_u = std::sqrt(sin2_u);
+			double sin4_u = sin2_u * sin2_u;
+
+			double cos_v = -dot(v, w);
+			double sin2_v = 1.0 - cos_v * cos_v;
+			double sin_v = std::sqrt(sin2_v);
+			double sin4_v = sin2_v * sin2_v;
+
+			for (int i = 0; i < 3; ++i) {
+				for (int j = 0; j < 3; ++j) {
+					int k = 0;
+					while (k == i || k == j) ++k;
+
+					double term0 = (uw[i] * (w[j] * cos_u - u[j]) + uw[j] * (w[i] * cos_u - u[i])) / (lambda_u * lambda_u * sin4_u);
+					double term1 = (vw[i] * (w[j] * cos_v - v[j]) + vw[j] * (w[i] * cos_v - v[i])) / (lambda_v * lambda_v * sin4_v);
+					double term2 = (uw[i] * (w[j] - 2.0 * u[j] * cos_u + w[j] * cos_u * cos_u) + uw[j] * (w[i] - 2.0 * u[i] * cos_u + w[i] * cos_u * cos_u)) / (2.0 * lambda_u * lambda_w * sin4_u);
+					double term3 = (vw[i] * (w[j] + 2.0 * u[j] * cos_v + w[j] * cos_v * cos_v) + vw[j] * (w[i] + 2.0 * u[i] * cos_v + w[i] * cos_v * cos_v)) / (2.0 * lambda_v * lambda_w * sin4_v);
+					double term4 = (uw[i] * (u[j] + u[j] * cos_u * cos_u - 3.0 * w[j] * cos_u + w[j] * cos_u * cos_u * cos_u) + uw[j] * (u[i] + u[i] * cos_u * cos_u - 3.0 * w[i] * cos_u + w[i] * cos_u * cos_u * cos_u)) / (2.0 * lambda_w * lambda_w * sin4_u);
+					double term5 = (vw[i] * (v[j] + v[j] * cos_v * cos_v + 3.0 * w[j] * cos_v - w[j] * cos_v * cos_v * cos_v) + vw[j] * (v[i] + v[i] * cos_v * cos_v + 3.0 * w[i] * cos_v - w[i] * cos_v * cos_v * cos_v)) / (2.0 * lambda_w * lambda_w * sin4_v);
+					double term6 = (j - i) * pow(-0.5, std::abs(j - i)) * (w[k] * cos_u - u[k]) / (lambda_u * lambda_w * sin_u);
+					double term7 = (j - i) * pow(-0.5, std::abs(j - i)) * (w[k] * cos_v - v[k]) / (lambda_v * lambda_w * sin_v);
+
+					matrix.at(index0 * 3 + i, index0 * 3 + j) =  term1;
+					matrix.at(index1 * 3 + i, index1 * 3 + j) =  term1 - 2.0 * term3 - term4 + term5;
+					matrix.at(index2 * 3 + i, index2 * 3 + j) =  term0 - 2.0 * term2 - term4 + term5;
+					matrix.at(index3 * 3 + i, index3 * 3 + j) =  term0;
+
+					matrix.at(index0 * 3 + i, index1 * 3 + j) = -term1 + term3;
+					matrix.at(index1 * 3 + i, index0 * 3 + j) = -term1 + term3 - term7;
+
+					matrix.at(index0 * 3 + i, index2 * 3 + j) = -term3;
+					matrix.at(index2 * 3 + i, index0 * 3 + j) = -term3 + term7;
+
+					matrix.at(index1 * 3 + i, index2 * 3 + j) =  term2 + term3 + term4 - term5 + term6 + term7;
+					matrix.at(index2 * 3 + i, index1 * 3 + j) =  term2 + term3 + term4 - term5 + term6 + term7;
+
+					matrix.at(index1 * 3 + i, index3 * 3 + j) = -term2 - term6;
+					matrix.at(index3 * 3 + i, index1 * 3 + j) = -term2 - term6 - term7;
+
+					matrix.at(index2 * 3 + i, index3 * 3 + j) = -term0 + term2 - term6;
+					matrix.at(index3 * 3 + i, index2 * 3 + j) = -term0 + term2 - term6 + term7;
+				}
+			}
+			break;
+		}
+		}
 	}
 
 	void Molecule::printXYZData(const std::string& table_title) const {
