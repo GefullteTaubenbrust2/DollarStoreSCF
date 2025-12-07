@@ -4,8 +4,6 @@
 #include "PointGroup.hpp"
 #include "Rotation.hpp"
 
-#include "scf/Energy.hpp"
-
 #include "../lalib/Lalib.hpp"
 
 #include "../util/FormattedStream.hpp"
@@ -15,6 +13,9 @@ using namespace flo;
 namespace scf {
 	extern VectorNd frequencies;
 	extern Molecule molecule;
+	namespace freq {
+		extern double equilibrium_total_energy;
+	}
 }
 
 namespace flo {
@@ -62,14 +63,24 @@ namespace flo {
 		}
 	};
 
+	CanonicalPartitionFunction getElectronicPartitionFunction(double energy, double temperature, double volume) {
+		CanonicalPartitionFunction result(temperature, volume);
+
+		double beta = 1.0 / (kB_in_Ha_K * temperature);
+
+		result.lnZ = -beta * energy;
+		result.dlnZ_dbeta = -energy;
+
+		return result;
+	}
 
 	CanonicalPartitionFunction getZeroPointFunction(VectorNd& frequencies, double temperature, double volume) {
 		CanonicalPartitionFunction result(temperature, volume);
 
 		double beta = 1.0 / (kB_in_Ha_K * temperature);
 
-		for (int i = 6; i < frequencies.size(); ++i) {
-			if (frequencies[i] < 0.001 / au_to_per_cm) continue;
+		for (int i = 0; i < frequencies.size(); ++i) {
+			if (frequencies[i] < 1.0 / au_to_per_cm) continue;
 			result.lnZ -= 0.5 * beta * frequencies[i];
 			result.dlnZ_dbeta -= 0.5 * frequencies[i];
 		}
@@ -82,10 +93,10 @@ namespace flo {
 
 		double beta = 1.0 / (kB_in_Ha_K * temperature);
 
-		for (int i = 6; i < frequencies.size(); ++i) {
-			if (frequencies[i] < 0.001 / au_to_per_cm) continue;
+		for (int i = 0; i < frequencies.size(); ++i) {
+			if (frequencies[i] < 1.0 / au_to_per_cm) continue;
 			double exponential_term = std::exp(-beta * frequencies[i]);
-			result.lnZ += std::log(1.0 - exponential_term);
+			result.lnZ -= std::log(1.0 - exponential_term);
 			result.dlnZ_dbeta -= frequencies[i] * exponential_term / (1.0 - exponential_term);
 		}
 
@@ -121,7 +132,7 @@ namespace flo {
 		return result;
 	}
 
-#define PRINT_THERMO(TITLE, QUANTITY)\
+#define PRINT_THERMO(TITLE, QUANTITY, FACTOR)\
 	fout.resetRows();\
 	fout.addRow(NumberFormat::crudeFormatPositive(10, 8), TextAlignment::centered, 62);\
 	fout << '|' << '_' << TITLE << '|' << '\n';\
@@ -134,12 +145,13 @@ namespace flo {
 	fout.addRow(NumberFormat(), TextAlignment::left, 20);\
 	fout.addRow(NumberFormat::crudeFormat(16, 12), TextAlignment::right, 16);\
 	fout.addRow(NumberFormat::crudeFormat(16, 12), TextAlignment::right, 16);\
-	fout << '|' << "Translation" << '|' << translation_Z.QUANTITY() << '|' << (translation_Z.QUANTITY() * Ha_to_kJmol) << '|' << '\n';\
-	fout << '|' << "Rotation" << '|' << rotation_Z.QUANTITY() << '|' << (rotation_Z.QUANTITY() * Ha_to_kJmol) << '|' << '\n';\
-	fout << '|' << "Vibration" << '|' << vibration_Z.QUANTITY() << '|' << (vibration_Z.QUANTITY() * Ha_to_kJmol) << '|' << '\n';\
-	fout << '|' << "Zero point energy" << '|' << zero_point_Z.QUANTITY() << '|' << (zero_point_Z.QUANTITY() * Ha_to_kJmol) << '|' << '\n';\
-	fout << '|' << '_' << "Electronic" << '|' << '_' << electronic_Z.QUANTITY() << '|' << '_' << (electronic_Z.QUANTITY() * Ha_to_kJmol) << '|' << '\n';\
-	fout << '|' << '_' << "Total" << '|' << '_' << total_Z.QUANTITY() << '|' << '_' << (total_Z.QUANTITY() * Ha_to_kJmol) << '|' << '\n';\
+	fout << '|' << "Translation" << '|' << (translation_Z.QUANTITY() * FACTOR) << '|' << (translation_Z.QUANTITY() * FACTOR * Ha_to_kJmol) << '|' << '\n';\
+	fout << '|' << "Rotation" << '|' << (rotation_Z.QUANTITY() * FACTOR) << '|' << (rotation_Z.QUANTITY() * FACTOR * Ha_to_kJmol) << '|' << '\n';\
+	fout << '|' << "Vibration" << '|' << (vibration_Z.QUANTITY() * FACTOR) << '|' << (vibration_Z.QUANTITY() * FACTOR * Ha_to_kJmol) << '|' << '\n';\
+	fout << '|' << "Zero point energy" << '|' << (zero_point_Z.QUANTITY() * FACTOR) << '|' << (zero_point_Z.QUANTITY() * FACTOR * Ha_to_kJmol) << '|' << '\n';\
+	fout << '|' << '_' << "Electronic" << '|' << '_' << (electronic_Z.QUANTITY() * FACTOR) << '|' << '_' << (electronic_Z.QUANTITY() * FACTOR * Ha_to_kJmol) << '|' << '\n';\
+	fout << '|' << "Total correction" << '|' << (total_Z_minus_e.QUANTITY() * FACTOR) << '|' << (total_Z_minus_e.QUANTITY() * FACTOR * Ha_to_kJmol) << '|' << '\n';\
+	fout << '|' << '_' << "Total" << '|' << '_' << (total_Z.QUANTITY() * FACTOR) << '|' << '_' << (total_Z.QUANTITY() * FACTOR * Ha_to_kJmol) << '|' << '\n';
 
 	void doThermochem(double temperature, double pressure_Pa) {
 		double pressure = pressure_Pa * Pa_to_au;
@@ -150,7 +162,8 @@ namespace flo {
 			mass += scf::molecule[i].mass;
 		}
 
-		scf::frequencies = VectorNd({0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1700 / au_to_per_cm, 3200 / au_to_per_cm, 3300 / au_to_per_cm});
+		//scf::frequencies = VectorNd({0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1770 / au_to_per_cm, 4150 / au_to_per_cm, 4270 / au_to_per_cm});
+		//scf::freq::equilibrium_total_energy = -76.0231255;
 
 		MatrixNd inertia_axes(3, 3);
 		PointGroup point_group = findPointGroup(scf::molecule, 0.01);
@@ -164,12 +177,9 @@ namespace flo {
 
 		CanonicalPartitionFunction vibration_Z = getVibrationalPartitionFunction(scf::frequencies, temperature, volume);
 
-		CanonicalPartitionFunction electronic_Z;
-		electronic_Z.lnZ = 0.0;
-		electronic_Z.dlnZ_dbeta = 0.0;
-		electronic_Z.dlnZ_dV = 0.0;
-		electronic_Z.temperature = temperature;
-		electronic_Z.volume = volume;
+		CanonicalPartitionFunction electronic_Z = getElectronicPartitionFunction(scf::freq::equilibrium_total_energy, temperature, volume);
+
+		CanonicalPartitionFunction total_Z_minus_e = translation_Z + rotation_Z + zero_point_Z + vibration_Z;
 
 		CanonicalPartitionFunction total_Z = translation_Z + rotation_Z + zero_point_Z + vibration_Z + electronic_Z;
 
@@ -187,11 +197,11 @@ namespace flo {
 		fout << "4.\tThe molecule is treated as an ideal gas.\n";
 		fout << "5.\tThe point group of the molecule is " << point_group.getSchoenfliesSymbol() << "." << '|' << '\n';
 
-		PRINT_THERMO("Inner Energy", getInternalEnergy);
-		PRINT_THERMO("Enthalpy", getEnthalpy);
-		PRINT_THERMO("Entropy, TS", getEntropy);
-		PRINT_THERMO("Gibbs Free Energy", getFreeEnthalpy);
-		PRINT_THERMO("Helmholtz Free Energy", getFreeEnergy);
+		PRINT_THERMO("Inner Energy", getInternalEnergy, 1.0);
+		PRINT_THERMO("Enthalpy", getEnthalpy, 1.0);
+		PRINT_THERMO("Entropy, TS", getEntropy, temperature);
+		PRINT_THERMO("Gibbs Free Energy", getFreeEnthalpy, 1.0);
+		PRINT_THERMO("Helmholtz Free Energy", getFreeEnergy, 1.0);
 		fout.resetRows();
 		fout << '\n';
 	}

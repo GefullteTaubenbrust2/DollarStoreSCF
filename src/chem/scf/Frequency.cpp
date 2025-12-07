@@ -33,6 +33,8 @@ namespace freq {
 	double finite_difference = 0.001;
 	double step_size = 0.0;
 
+	double equilibrium_total_energy = 0.0;
+
 	bool use_internal_coordinates = true;
 
 	void applyOffset(int coordinate_index) {
@@ -108,17 +110,11 @@ using namespace freq;
 		displacement_matrix = &molecule.calculateDisplacementMatrix();
 		wilson_matrix = &molecule.calculateWilsonMatrix();
 
-		constructBasis();
-
-		useCoreGuess();
-
-		solveMOs();
-
 		getEnergyGradient(base_gradient);
 
 		base_internal_gradient = base_gradient * *displacement_matrix;
 
-		double energy = getTotalEnergy();
+		equilibrium_total_energy = getTotalEnergy();
 
 		uint iteration_count = use_internal_coordinates ? molecule.getInternalCoordinateCount() : molecule.size() * 3;
 

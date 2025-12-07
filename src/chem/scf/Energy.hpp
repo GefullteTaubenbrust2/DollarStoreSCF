@@ -15,5 +15,7 @@ namespace scf {
 
 	double getNuclearRepulsionEnergy();
 
+	double getTotalElectronicEnergy();
+
 	double getTotalEnergy();
 }
